@@ -109,7 +109,7 @@ const formatCurrency = (amount: number) => {
 };
 
 export default function MerchantsPage() {
-  const [merchants, setMerchants] = useState(mockMerchants);
+  const [merchants] = useState(mockMerchants);
   const [filteredMerchants, setFilteredMerchants] = useState(mockMerchants);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
