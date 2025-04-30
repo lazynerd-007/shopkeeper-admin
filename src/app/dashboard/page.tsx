@@ -71,7 +71,7 @@ const formatCurrency = (amount: number) => {
 };
 
 export default function Dashboard() {
-  const [merchants, setMerchants] = useState(mockMerchants);
+  const [merchants] = useState(mockMerchants);
   const [activeMerchants, setActiveMerchants] = useState(0);
   const [inactiveMerchants, setInactiveMerchants] = useState(0);
   const [totalSales, setTotalSales] = useState(0);

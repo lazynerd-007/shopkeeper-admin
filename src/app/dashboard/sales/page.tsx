@@ -96,7 +96,7 @@ const formatCurrency = (amount: number) => {
 };
 
 export default function SalesPage() {
-  const [sales, setSales] = useState(mockSalesData);
+  const [sales] = useState(mockSalesData);
   const [filteredSales, setFilteredSales] = useState(mockSalesData);
   const [merchantFilter, setMerchantFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
