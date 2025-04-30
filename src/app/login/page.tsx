@@ -24,7 +24,7 @@ export default function Login() {
       setTimeout(() => {
         router.push('/dashboard');
       }, 1000);
-    } catch (err) {
+    } catch (_) {
       setError('Invalid credentials. Please try again.');
     } finally {
       setIsLoading(false);

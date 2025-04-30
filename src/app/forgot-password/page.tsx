@@ -27,7 +27,7 @@ export default function ForgotPassword() {
       setTimeout(() => {
         setStep(2);
       }, 1000);
-    } catch (err) {
+    } catch (_) {
       setError('Failed to send OTP. Please try again.');
     } finally {
       setIsLoading(false);
@@ -45,7 +45,7 @@ export default function ForgotPassword() {
       setTimeout(() => {
         setStep(3);
       }, 1000);
-    } catch (err) {
+    } catch (_) {
       setError('Invalid OTP. Please try again.');
     } finally {
       setIsLoading(false);
@@ -69,7 +69,7 @@ export default function ForgotPassword() {
       setTimeout(() => {
         router.push('/login');
       }, 1000);
-    } catch (err) {
+    } catch (_) {
       setError('Failed to reset password. Please try again.');
     } finally {
       setIsLoading(false);

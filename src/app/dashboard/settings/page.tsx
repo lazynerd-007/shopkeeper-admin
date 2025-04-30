@@ -24,7 +24,7 @@ export default function SettingsPage() {
         setMessage({ type: 'success', text: 'Profile updated successfully!' });
         setIsLoading(false);
       }, 1000);
-    } catch (err) {
+    } catch (_) {
       setMessage({ type: 'error', text: 'Failed to update profile. Please try again.' });
       setIsLoading(false);
     }
@@ -50,7 +50,7 @@ export default function SettingsPage() {
         setConfirmPassword('');
         setIsLoading(false);
       }, 1000);
-    } catch (err) {
+    } catch (_) {
       setMessage({ type: 'error', text: 'Failed to update password. Please try again.' });
       setIsLoading(false);
     }

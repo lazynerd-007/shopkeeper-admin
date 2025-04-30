@@ -122,7 +122,7 @@ export default function SalesPage() {
     // Filter by date range
     if (dateFilter !== 'all') {
       const today = new Date();
-      let startDate = new Date();
+      const startDate = new Date();
       
       if (dateFilter === 'today') {
         startDate.setHours(0, 0, 0, 0);
