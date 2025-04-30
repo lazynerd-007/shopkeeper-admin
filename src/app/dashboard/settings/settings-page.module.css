@@ -1,0 +1,171 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: black;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.backButton {
+  background-color: #e5e7eb;
+  color: #4b5563;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  transition-property: background-color;
+  transition-duration: 150ms;
+}
+
+.backButton:hover {
+  background-color: #d1d5db;
+}
+
+.saveButton {
+  background-color: #2563eb;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  transition-property: background-color;
+  transition-duration: 150ms;
+}
+
+.saveButton:hover {
+  background-color: #1d4ed8;
+}
+
+.settingsCard {
+  background-color: white;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.settingsHeader {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.sectionSubtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.settingsBody {
+  padding: 1.5rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1.5rem;
+}
+
+.formLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+}
+
+.formInput {
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  background-color: white;
+  color: #111827;
+  width: 100%;
+}
+
+.formInput:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.formSelect {
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  background-color: white;
+  color: #111827;
+  width: 100%;
+}
+
+.formSelect:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.formCheckboxGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.formCheckbox {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.25rem;
+  border: 1px solid #d1d5db;
+}
+
+.formCheckboxLabel {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.formHelpText {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.divider {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 1.5rem 0;
+}
+
+.buttonContainer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.cancelButton {
+  background-color: white;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  transition-property: background-color;
+  transition-duration: 150ms;
+}
+
+.cancelButton:hover {
+  background-color: #f9fafb;
+}
