@@ -341,7 +341,7 @@ export default function SalesPage() {
             }
             
             // Calculate total from the sample
-            const totalPaid = relevantTransactions.reduce((sum: number, t) => sum + t.amountPaid, 0);
+            const totalPaid = relevantTransactions.reduce((sum: number, t: Transaction) => sum + t.amountPaid, 0);
             
             // Calculate average transaction
             const averageTransaction = totalPaid / relevantTransactions.length;
