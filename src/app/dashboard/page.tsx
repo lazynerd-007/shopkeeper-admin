@@ -139,7 +139,7 @@ export default function Dashboard() {
           <div className={styles.statCardContent}>
             <div>
               <p className={styles.statTitle}>Total Transactions</p>
-              <p className={styles.statValue}>{formatNumber(overview?.transactionCount)}</p>
+              <p className={styles.statValue}>{formatNumber(overview?.transactionCount ?? 0)}</p>
             </div>
           </div>
         </div>
