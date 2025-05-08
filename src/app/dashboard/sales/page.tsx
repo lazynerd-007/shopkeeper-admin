@@ -670,7 +670,7 @@ export default function SalesPage() {
     // Validate dates before searching
     const { isValid, error } = validateAndFormatDates();
     if (!isValid) {
-      setError(error);
+      setError(error || 'Invalid date format');
       return;
     }
     
