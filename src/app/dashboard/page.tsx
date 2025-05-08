@@ -25,9 +25,25 @@ const formatNumber = (num: number) => {
   return num?.toLocaleString('en-US') || '-';
 };
 
+// Define proper types for the data
+interface DashboardOverview {
+  activeMerchantCount: number;
+  inactiveMerchantCount: number;
+  transactionSum: number;
+  transactionCount: number;
+}
+
+interface Merchant {
+  id: string;
+  name: string;
+  contactEmail: string;
+  phoneNumber: string;
+  createdAt: string;
+}
+
 export default function Dashboard() {
-  const [overview, setOverview] = useState<any>(null);
-  const [merchants, setMerchants] = useState<any[]>([]);
+  const [overview, setOverview] = useState<DashboardOverview | null>(null);
+  const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -62,8 +78,9 @@ export default function Dashboard() {
         const merchantsData = await merchantsRes.json();
         if (!merchantsRes.ok || !merchantsData.status) throw new Error(merchantsData.message || 'Failed to fetch merchants');
         setMerchants(merchantsData.data);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load dashboard data.');
+      } catch (err: Error | unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load dashboard data.';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }

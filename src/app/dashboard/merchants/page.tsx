@@ -27,8 +27,21 @@ const formatNumber = (num: number) => {
 
 const BASE_URL = 'https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1';
 
+// Define proper interface for merchants
+interface Merchant {
+  id: string;
+  merchant: string;
+  branch: string;
+  contactEmail: string;
+  status: string;
+  transactionAmount: number;
+  transactionCount: number;
+  lastTransactionDate: string;
+  createdAt: string;
+}
+
 export default function MerchantsPage() {
-  const [merchants, setMerchants] = useState<any[]>([]);
+  const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
@@ -70,8 +83,9 @@ export default function MerchantsPage() {
         setMerchants(data.data.docs);
         setTotal(data.data.total);
         setTotalPages(data.data.pages);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load merchants.');
+      } catch (err: Error | unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load merchants.';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }

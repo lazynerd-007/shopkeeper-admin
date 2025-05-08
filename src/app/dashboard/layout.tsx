@@ -33,7 +33,6 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [userName, setUserName] = useState('Admin');
   const [userInitials, setUserInitials] = useState('A');
   const [fullName, setFullName] = useState('Admin User');
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -45,11 +44,10 @@ export default function DashboardLayout({
     if (userData) {
       try {
         const user = JSON.parse(userData);
-        let firstName = user.firstName || '';
-        let lastName = user.lastName || '';
+        const firstName = user.firstName || '';
+        const lastName = user.lastName || '';
         
         if (firstName) {
-          setUserName(firstName);
           setFullName(`${firstName} ${lastName}`.trim());
           
           // Get initials from first and last name

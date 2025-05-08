@@ -186,8 +186,9 @@ export default function SettingsPage() {
 
       setMessage({ type: 'success', text: data.message || 'Profile updated successfully!' });
       setShowProfileModal(true);
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Failed to update profile. Please try again.' });
+    } catch (err: Error | unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update profile. Please try again.';
+      setMessage({ type: 'error', text: errorMessage });
     } finally {
       setIsLoading(false);
     }
@@ -237,8 +238,9 @@ export default function SettingsPage() {
         setConfirmPassword('');
       setPasswordHint('');
       setShowPasswordModal(true);
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Failed to update password. Please try again.' });
+    } catch (err: Error | unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update password. Please try again.';
+      setMessage({ type: 'error', text: errorMessage });
     } finally {
       setIsLoading(false);
     }

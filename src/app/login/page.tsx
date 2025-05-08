@@ -88,8 +88,9 @@ export default function Login() {
       setTimeout(() => {
         router.push('/dashboard');
       }, 1500);
-    } catch (err: any) {
-      setError(err.message || 'Invalid credentials. Please try again.');
+    } catch (err: Error | unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Invalid credentials. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
