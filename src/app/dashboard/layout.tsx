@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import styles from './dashboard.module.css';
 
 interface SidebarLinkProps {
@@ -31,7 +31,60 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [userName, setUserName] = useState('Admin');
+  const [userInitials, setUserInitials] = useState('A');
+  const [fullName, setFullName] = useState('Admin User');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Get user data from localStorage
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        let firstName = user.firstName || '';
+        let lastName = user.lastName || '';
+        
+        if (firstName) {
+          setUserName(firstName);
+          setFullName(`${firstName} ${lastName}`.trim());
+          
+          // Get initials from first and last name
+          const initials = `${firstName.charAt(0)}${lastName.charAt(0) || ''}`.toUpperCase();
+          setUserInitials(initials || 'A');
+        }
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+      }
+    }
+  }, []);
+
+  // Handle clicks outside the dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowUserDropdown(false);
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    // Clear all user data from localStorage
+    localStorage.removeItem('token');
+    localStorage.removeItem('userData');
+    localStorage.removeItem('storeId');
+    
+    // Redirect to login page
+    router.push('/login');
+  };
 
   return (
     <div className={`${styles.dashboardContainer} ${!isSidebarOpen ? styles.sidebarHidden : ''}`}>
@@ -88,13 +141,13 @@ export default function DashboardLayout({
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <Link 
-            href="/login"
+          <button 
+            onClick={handleLogout}
             className={styles.logoutLink}
           >
             <span className={styles.navIcon}>🚪</span>
             <span className={styles.navLabel}>Logout</span>
-          </Link>
+          </button>
         </div>
       </aside>
 
@@ -114,13 +167,36 @@ export default function DashboardLayout({
             <h1 className={styles.pageTitle}>Admin Dashboard</h1>
           </div>
           <div className={styles.headerRight}>
-            <div className="relative">
-              <button className={styles.userButton}>
+            <div className="relative" ref={dropdownRef}>
+              <button 
+                className={styles.userButton}
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
+              >
                 <div className={styles.userAvatar}>
-                  A
+                  {userInitials}
                 </div>
-                <span className={styles.userName}>Admin User</span>
+                <span className={styles.userName}>{fullName}</span>
               </button>
+              
+              {showUserDropdown && (
+                <div className="absolute right-0 mt-2 w-48 py-2 bg-white rounded-md shadow-xl z-20">
+                  <div className="px-4 py-3 text-sm text-gray-900 border-b border-gray-200">
+                    <div className="font-medium">{fullName}</div>
+                    <div className="truncate">{localStorage.getItem('userData') ? JSON.parse(localStorage.getItem('userData')!).email : ''}</div>
+                  </div>
+                  <div className="py-1">
+                    <Link href="/dashboard/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      <span style={{ marginRight: '8px' }}>⚙️</span> Settings
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                    >
+                      <span style={{ marginRight: '8px' }}>🚪</span> Sign out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>

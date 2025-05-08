@@ -6,11 +6,42 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import styles from './login.module.css';
 
+function SuccessModal({ show }: { show: boolean }) {
+  if (!show) return null;
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      background: 'rgba(0,0,0,0.3)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+    }}>
+      <div style={{
+        background: 'white',
+        borderRadius: 12,
+        padding: '2rem 3rem',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.15)',
+        textAlign: 'center',
+        minWidth: 280,
+      }}>
+        <h2 style={{ color: '#2563eb', marginBottom: 12 }}>Login Successful!</h2>
+        <p style={{ color: '#374151' }}>Redirecting to dashboard...</p>
+      </div>
+    </div>
+  );
+}
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -19,13 +50,46 @@ export default function Login() {
     setError('');
 
     try {
-      // In a real application, this would be an API call to authenticate
-      // For demo purposes, we'll just redirect to the dashboard
+      const response = await fetch('https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1/auth/login-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'D-UUID': '645545453533',
+        },
+        body: JSON.stringify({
+          emailOrPhone: email,
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.status) {
+        throw new Error(data.message || 'Login failed.');
+      }
+
+      // Store complete user data in localStorage for profile settings
+      localStorage.setItem('token', data.data.token);
+      if (data.data.user) {
+        localStorage.setItem('userData', JSON.stringify({
+          firstName: data.data.user.firstName,
+          lastName: data.data.user.lastName,
+          email: data.data.user.email,
+          phoneNumber: data.data.user.phoneNumber,
+          countryCode: data.data.user.countryCode || '+234'
+        }));
+        
+        if (data.data.user.ownerStore && data.data.user.ownerStore.length > 0) {
+          localStorage.setItem('storeId', data.data.user.ownerStore[0].id);
+        }
+      }
+
+      setShowSuccess(true);
       setTimeout(() => {
         router.push('/dashboard');
-      }, 1000);
-    } catch {
-      setError('Invalid credentials. Please try again.');
+      }, 1500);
+    } catch (err: any) {
+      setError(err.message || 'Invalid credentials. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -115,6 +179,8 @@ export default function Login() {
           </div>
         </div>
       </div>
+
+      <SuccessModal show={showSuccess} />
     </div>
   );
 }

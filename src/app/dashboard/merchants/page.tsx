@@ -2,150 +2,111 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Loader from '../../../Loader';
 
-// Mock data for demonstration
-const mockMerchants = [
-  { 
-    id: 1, 
-    name: 'Lazynerd Store', 
-    branch: 'Main Branch', 
-    status: 'active', 
-    totalSales: 15000, 
-    lastActivity: '2023-11-15T10:30:00Z',
-    salesCount: 120,
-    email: 'main@lazynerd.com',
-    phone: '+233 50 123 4567',
-    address: '123 Main Street, Accra'
-  },
-  { 
-    id: 2, 
-    name: 'Lazynerd Store', 
-    branch: 'Downtown Branch', 
-    status: 'active', 
-    totalSales: 8500, 
-    lastActivity: '2023-11-14T14:45:00Z',
-    salesCount: 75,
-    email: 'downtown@lazynerd.com',
-    phone: '+233 50 123 4568',
-    address: '456 Downtown Avenue, Accra'
-  },
-  { 
-    id: 3, 
-    name: 'TechGadgets', 
-    branch: 'Main Store', 
-    status: 'inactive', 
-    totalSales: 3200, 
-    lastActivity: '2023-10-30T09:15:00Z',
-    salesCount: 28,
-    email: 'info@techgadgets.com',
-    phone: '+233 50 987 6543',
-    address: '789 Tech Street, Kumasi'
-  },
-  { 
-    id: 4, 
-    name: 'Fashion Hub', 
-    branch: 'Mall Branch', 
-    status: 'active', 
-    totalSales: 12700, 
-    lastActivity: '2023-11-15T16:20:00Z',
-    salesCount: 95,
-    email: 'mall@fashionhub.com',
-    phone: '+233 50 456 7890',
-    address: '101 Mall Road, Accra'
-  },
-  { 
-    id: 5, 
-    name: 'Fashion Hub', 
-    branch: 'City Center', 
-    status: 'active', 
-    totalSales: 9800, 
-    lastActivity: '2023-11-13T11:10:00Z',
-    salesCount: 82,
-    email: 'city@fashionhub.com',
-    phone: '+233 50 456 7891',
-    address: '202 City Center, Takoradi'
-  },
-  { 
-    id: 6, 
-    name: 'Grocery Express', 
-    branch: 'North Branch', 
-    status: 'active', 
-    totalSales: 18900, 
-    lastActivity: '2023-11-15T08:45:00Z',
-    salesCount: 210,
-    email: 'north@groceryexpress.com',
-    phone: '+233 50 222 3333',
-    address: '303 North Road, Tamale'
-  },
-  { 
-    id: 7, 
-    name: 'Grocery Express', 
-    branch: 'South Branch', 
-    status: 'inactive', 
-    totalSales: 7600, 
-    lastActivity: '2023-11-01T13:20:00Z',
-    salesCount: 85,
-    email: 'south@groceryexpress.com',
-    phone: '+233 50 222 4444',
-    address: '404 South Street, Cape Coast'
-  },
-];
-
-// Format date to a readable format
 const formatDate = (dateString: string) => {
+  if (!dateString) return '-';
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', { 
     year: 'numeric', 
     month: 'short', 
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   });
 };
 
-// Format currency
 const formatCurrency = (amount: number) => {
-  return `GHS${amount.toFixed(2)}`;
+  return `GHS${amount?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
+// Helper to format numbers with comma separators
+const formatNumber = (num: number) => {
+  return num?.toLocaleString('en-US') || '-';
+};
+
+const BASE_URL = 'https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1';
+
 export default function MerchantsPage() {
-  const [merchants] = useState(mockMerchants);
-  const [filteredMerchants, setFilteredMerchants] = useState(mockMerchants);
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [merchants, setMerchants] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchInputValue, setSearchInputValue] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // Apply filters
-    let filtered = [...merchants];
-    
-    // Filter by status
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(merchant => merchant.status === statusFilter);
-    }
-    
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(merchant => 
-        merchant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        merchant.branch.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        merchant.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    setFilteredMerchants(filtered);
-    setTotalPages(Math.ceil(filtered.length / rowsPerPage));
-    setCurrentPage(1); // Reset to first page when filters change
-  }, [merchants, statusFilter, searchTerm, rowsPerPage]);
-  
-  // Get current page data
-  const getCurrentPageData = () => {
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    const endIndex = startIndex + rowsPerPage;
-    return filteredMerchants.slice(startIndex, endIndex);
+    const fetchMerchants = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const token = localStorage.getItem('token');
+        const storeId = localStorage.getItem('storeId');
+        if (!token || !storeId) throw new Error('Missing authentication. Please log in again.');
+        const headers = {
+          'D-UUID': '645545453533',
+          'S-UUID': storeId,
+          'Authorization': `Bearer ${token}`
+        };
+        const params = new URLSearchParams({
+          page: String(currentPage),
+          limit: String(rowsPerPage),
+          search: searchTerm || '',
+          status: statusFilter || '',
+          startDate: '',
+          endDate: '',
+        });
+        const url = `${BASE_URL}/stores/summary/merchant?${params.toString()}`;
+        const res = await fetch(url, {
+          method: 'GET',
+          headers,
+        });
+        const data = await res.json();
+        if (!res.ok || !data.status) throw new Error(data.message || 'Failed to fetch merchants');
+        setMerchants(data.data.docs);
+        setTotal(data.data.total);
+        setTotalPages(data.data.pages);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load merchants.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMerchants();
+  }, [currentPage, rowsPerPage, searchTerm, statusFilter]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchInputValue(e.target.value);
   };
+
+  const handleSearch = () => {
+    setSearchTerm(searchInputValue);
+    setCurrentPage(1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSearch();
+    }
+  };
+
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setStatusFilter(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleRowsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setRowsPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  };
+
+  if (loading) return <Loader />;
+  if (error) return <div className="p-8 text-red-600">{error}</div>;
 
   return (
     <div className="space-y-6">
@@ -167,24 +128,34 @@ export default function MerchantsPage() {
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <div className="flex">
             <input
               id="search"
               type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by name, branch, or email"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-            />
+                value={searchInputValue}
+                onChange={handleSearchChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Search by merchant, branch, or email"
+                className="w-full px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                autoComplete="off"
+              />
+              <button
+                onClick={handleSearch}
+                className="px-4 py-2 bg-blue-600 text-white font-medium rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Search
+              </button>
+            </div>
           </div>
           <div className="w-full md:w-48">
             <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
               id="status"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={handleStatusChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
             >
-              <option value="all">All</option>
+              <option value="">All</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
@@ -197,12 +168,12 @@ export default function MerchantsPage() {
         <div className="p-4 sm:p-6 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Merchant List</h2>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-2">
-            <p className="text-sm text-gray-700 mb-2 sm:mb-0">Showing {(currentPage - 1) * rowsPerPage + 1} to {Math.min(currentPage * rowsPerPage, filteredMerchants.length)} of {filteredMerchants.length} merchants</p>
+            <p className="text-sm text-gray-700 mb-2 sm:mb-0">Showing {(currentPage - 1) * rowsPerPage + 1} to {Math.min(currentPage * rowsPerPage, total)} of {formatNumber(total)} merchants</p>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-700">Rows per page:</span>
               <select 
                 value={rowsPerPage} 
-                onChange={(e) => setRowsPerPage(Number(e.target.value))}
+                onChange={handleRowsPerPageChange}
                 className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                 aria-label="Select rows per page"
               >
@@ -217,57 +188,43 @@ export default function MerchantsPage() {
           <table className="w-full min-w-[640px]">
             <thead className="bg-gray-50 text-left">
               <tr>
-                <th className="px-4 py-3 text-xs font-medium text-gray-700 uppercase tracking-wider">Merchant</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-700 uppercase tracking-wider hidden sm:table-cell">Branch</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-700 uppercase tracking-wider hidden md:table-cell">Contact</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-700 uppercase tracking-wider hidden lg:table-cell">Total Sales</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-700 uppercase tracking-wider hidden lg:table-cell">Transactions</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-700 uppercase tracking-wider hidden md:table-cell">Last Activity</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-800 uppercase tracking-wider">Merchant</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-800 uppercase tracking-wider">Branch</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-800 uppercase tracking-wider">Contact</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-800 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-800 uppercase tracking-wider">Total Sales</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-800 uppercase tracking-wider">Transactions</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-800 uppercase tracking-wider">Last Activity</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-800 uppercase tracking-wider">Created</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {getCurrentPageData().map((merchant) => (
-                <tr key={merchant.id} className="hover:bg-gray-50">
+              {merchants.map((merchant, idx) => (
+                <tr key={idx} className="hover:bg-gray-50">
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{merchant.merchant}</td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{merchant.branch}</td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{merchant.contactEmail}</td>
                   <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{merchant.name}</div>
-                    <div className="text-xs text-gray-600 sm:hidden mt-1">{merchant.branch}</div>
-                    <div className="text-xs text-gray-600 md:hidden mt-1">{merchant.email}</div>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap hidden sm:table-cell">
-                    <div className="text-sm text-gray-600">{merchant.branch}</div>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap hidden md:table-cell">
-                    <div className="text-sm text-gray-600">{merchant.email}</div>
-                    <div className="text-xs text-gray-600 mt-1">{merchant.phone}</div>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${merchant.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                      {merchant.status === 'active' ? 'Active' : 'Inactive'}
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${merchant.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      {merchant.status}
                     </span>
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 hidden lg:table-cell">
-                    {formatCurrency(merchant.totalSales)}
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 hidden lg:table-cell">
-                    {merchant.salesCount}
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 hidden md:table-cell">
-                    {formatDate(merchant.lastActivity)}
-                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatCurrency(merchant.transactionAmount)}</td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatNumber(merchant.transactionCount)}</td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatDate(merchant.lastTransactionDate)}</td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatDate(merchant.createdAt)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        
         {/* Pagination */}
         <div className="px-4 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between">
           <div className="flex flex-wrap items-center justify-center gap-2 w-full sm:w-auto mb-4 sm:mb-0">
             <button
               onClick={() => setCurrentPage(1)}
               disabled={currentPage === 1}
-              className="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+              className="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
               aria-label="Go to first page"
             >
               First
@@ -275,18 +232,18 @@ export default function MerchantsPage() {
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+              className="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
               aria-label="Go to previous page"
             >
               Previous
             </button>
-            <span className="text-sm text-gray-700 font-medium px-2">
+            <span className="text-sm text-gray-900 font-medium px-2">
               Page {currentPage} of {totalPages}
             </span>
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+              className="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
               aria-label="Go to next page"
             >
               Next
@@ -294,7 +251,7 @@ export default function MerchantsPage() {
             <button
               onClick={() => setCurrentPage(totalPages)}
               disabled={currentPage === totalPages}
-              className="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+              className="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
               aria-label="Go to last page"
             >
               Last

@@ -3,57 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import styles from './dashboard-page.module.css';
+import Loader from '../../Loader';
 
-// Mock data for demonstration
-const mockMerchants = [
-  { 
-    id: 1, 
-    name: 'Lazynerd Store', 
-    branch: 'Main Branch', 
-    status: 'active', 
-    totalSales: 15000, 
-    lastActivity: '2023-11-15T10:30:00Z',
-    salesCount: 120
-  },
-  { 
-    id: 2, 
-    name: 'Lazynerd Store', 
-    branch: 'Downtown Branch', 
-    status: 'active', 
-    totalSales: 8500, 
-    lastActivity: '2023-11-14T14:45:00Z',
-    salesCount: 75
-  },
-  { 
-    id: 3, 
-    name: 'TechGadgets', 
-    branch: 'Main Store', 
-    status: 'inactive', 
-    totalSales: 3200, 
-    lastActivity: '2023-10-30T09:15:00Z',
-    salesCount: 28
-  },
-  { 
-    id: 4, 
-    name: 'Fashion Hub', 
-    branch: 'Mall Branch', 
-    status: 'active', 
-    totalSales: 12700, 
-    lastActivity: '2023-11-15T16:20:00Z',
-    salesCount: 95
-  },
-  { 
-    id: 5, 
-    name: 'Fashion Hub', 
-    branch: 'City Center', 
-    status: 'active', 
-    totalSales: 9800, 
-    lastActivity: '2023-11-13T11:10:00Z',
-    salesCount: 82
-  },
-];
-
-// Format date to a readable format
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', { 
@@ -65,30 +16,63 @@ const formatDate = (dateString: string) => {
   });
 };
 
-// Format currency
 const formatCurrency = (amount: number) => {
-  return `GHS${amount.toFixed(2)}`;
+  return `GHS${amount?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
+// Helper to format numbers with comma separators
+const formatNumber = (num: number) => {
+  return num?.toLocaleString('en-US') || '-';
 };
 
 export default function Dashboard() {
-  const [merchants] = useState(mockMerchants);
-  const [activeMerchants, setActiveMerchants] = useState(0);
-  const [inactiveMerchants, setInactiveMerchants] = useState(0);
-  const [totalSales, setTotalSales] = useState(0);
-  const [totalSalesCount, setTotalSalesCount] = useState(0);
+  const [overview, setOverview] = useState<any>(null);
+  const [merchants, setMerchants] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // Calculate summary statistics
-    const active = merchants.filter(m => m.status === 'active').length;
-    const inactive = merchants.filter(m => m.status === 'inactive').length;
-    const sales = merchants.reduce((sum, merchant) => sum + merchant.totalSales, 0);
-    const salesCount = merchants.reduce((sum, merchant) => sum + merchant.salesCount, 0);
-    
-    setActiveMerchants(active);
-    setInactiveMerchants(inactive);
-    setTotalSales(sales);
-    setTotalSalesCount(salesCount);
-  }, [merchants]);
+    const fetchData = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const token = localStorage.getItem('token');
+        const storeId = localStorage.getItem('storeId');
+        console.log('Dashboard API token:', token, 'storeId:', storeId);
+        console.log('Token used for API:', token);
+        if (!token || !storeId) throw new Error('Missing authentication. Please log in again.');
+        const headers = {
+          'D-UUID': '645545453533',
+          'S-UUID': storeId,
+          'Authorization': `Bearer ${token}`
+        };
+        // Fetch overview
+        const overviewRes = await fetch('https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1/stores/overview/merchant', {
+          method: 'GET',
+          headers
+        });
+        const overviewData = await overviewRes.json();
+        if (!overviewRes.ok || !overviewData.status) throw new Error(overviewData.message || 'Failed to fetch overview');
+        setOverview(overviewData.data);
+        // Fetch merchants
+        const merchantsRes = await fetch('https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1/stores/merchants', {
+          method: 'GET',
+          headers
+        });
+        const merchantsData = await merchantsRes.json();
+        if (!merchantsRes.ok || !merchantsData.status) throw new Error(merchantsData.message || 'Failed to fetch merchants');
+        setMerchants(merchantsData.data);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load dashboard data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) return <Loader />;
+  if (error) return <div className={styles.container}><p style={{color: 'red'}}>{error}</p></div>;
 
   return (
     <div className={styles.container}>
@@ -110,7 +94,7 @@ export default function Dashboard() {
           <div className={styles.statCardContent}>
             <div>
               <p className={styles.statTitle}>Active Merchants</p>
-              <p className={styles.statValue}>{activeMerchants}</p>
+              <p className={styles.statValue}>{overview?.activeMerchantCount ?? '-'}</p>
             </div>
           </div>
         </div>
@@ -119,7 +103,7 @@ export default function Dashboard() {
           <div className={styles.statCardContent}>
             <div>
               <p className={styles.statTitle}>Inactive Merchants</p>
-              <p className={styles.statValue}>{inactiveMerchants}</p>
+              <p className={styles.statValue}>{overview?.inactiveMerchantCount ?? '-'}</p>
             </div>
           </div>
         </div>
@@ -128,7 +112,7 @@ export default function Dashboard() {
           <div className={styles.statCardContent}>
             <div>
               <p className={styles.statTitle}>Total Sales</p>
-              <p className={styles.statValue}>{formatCurrency(totalSales)}</p>
+              <p className={styles.statValue}>{formatCurrency(overview?.transactionSum ?? 0)}</p>
             </div>
           </div>
         </div>
@@ -137,7 +121,7 @@ export default function Dashboard() {
           <div className={styles.statCardContent}>
             <div>
               <p className={styles.statTitle}>Total Transactions</p>
-              <p className={styles.statValue}>{totalSalesCount}</p>
+              <p className={styles.statValue}>{formatNumber(overview?.transactionCount) ?? '-'}</p>
             </div>
           </div>
         </div>
@@ -154,36 +138,18 @@ export default function Dashboard() {
             <thead className={styles.tableHeader}>
               <tr>
                 <th className={styles.tableHeaderCell}>Merchant</th>
-                <th className={styles.tableHeaderCell}>Branch</th>
-                <th className={styles.tableHeaderCell}>Status</th>
-                <th className={styles.tableHeaderCell}>Total Sales</th>
-                <th className={styles.tableHeaderCell}>Transactions</th>
-                <th className={styles.tableHeaderCell}>Last Activity</th>
+                <th className={styles.tableHeaderCell}>Contact Email</th>
+                <th className={styles.tableHeaderCell}>Phone</th>
+                <th className={styles.tableHeaderCell}>Created</th>
               </tr>
             </thead>
             <tbody>
               {merchants.map((merchant) => (
                 <tr key={merchant.id} className={styles.tableRow}>
-                  <td className={styles.tableCell}>
-                    <div className={styles.merchantName}>{merchant.name}</div>
-                  </td>
-                  <td className={styles.tableCell}>
-                    <div className={styles.merchantBranch}>{merchant.branch}</div>
-                  </td>
-                  <td className={styles.tableCell}>
-                    <span className={`${styles.statusBadge} ${merchant.status === 'active' ? styles.statusActive : styles.statusInactive}`}>
-                      {merchant.status === 'active' ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className={styles.tableCell}>
-                    {formatCurrency(merchant.totalSales)}
-                  </td>
-                  <td className={styles.tableCell}>
-                    {merchant.salesCount}
-                  </td>
-                  <td className={styles.tableCell}>
-                    {formatDate(merchant.lastActivity)}
-                  </td>
+                  <td className={styles.tableCell}>{merchant.name}</td>
+                  <td className={styles.tableCell}>{merchant.contactEmail}</td>
+                  <td className={styles.tableCell}>{merchant.phoneNumber}</td>
+                  <td className={styles.tableCell}>{formatDate(merchant.createdAt)}</td>
                 </tr>
               ))}
             </tbody>

@@ -306,21 +306,24 @@
 }
 
 .userAvatar {
-  width: 2rem;
-  height: 2rem;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: 9999px;
-  background-color: #3b82f6;
+  background-color: #4285F4;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
+  font-size: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .userName {
   font-size: 0.875rem;
   font-weight: 500;
   color: #111827;
+  margin-left: 0.5rem;
 }
 
 @media (min-width: 768px) {
