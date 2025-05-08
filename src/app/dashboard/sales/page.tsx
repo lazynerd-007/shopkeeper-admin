@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import styles from './sales-page.module.css';
 
@@ -21,6 +21,16 @@ interface PaymentItem {
   updatedAt: string;
 }
 
+// Customer interface to replace any
+interface Customer {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  // Add any other fields that might be in the customer object
+}
+
 interface Transaction {
   id: string;
   transactionReference: string;
@@ -33,7 +43,7 @@ interface Transaction {
   status: string;
   createdAt: string;
   updatedAt: string;
-  customer: any;
+  customer: Customer | null;
   cashier: {
     id: string;
     firstName: string;
@@ -122,7 +132,6 @@ const SkeletonLoader = () => (
 );
 
 export default function SalesPage() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -144,7 +153,6 @@ export default function SalesPage() {
   
   // Store list for filter dropdown
   const [storeList, setStoreList] = useState<{ id: string; name: string }[]>([]);
-  const [isLoadingStores, setIsLoadingStores] = useState(false);
   
   // State for total statistics
   const [totalStats, setTotalStats] = useState({
@@ -154,7 +162,7 @@ export default function SalesPage() {
   });
   
   // Validate and format dates
-  const validateAndFormatDates = () => {
+  const validateAndFormatDates = useCallback(() => {
     try {
       let formattedStartDate = null;
       let formattedEndDate = null;
@@ -193,18 +201,28 @@ export default function SalesPage() {
       }
       
       return { formattedStartDate, formattedEndDate, isValid: true };
-    } catch (err: any) {
+    } catch (err: Error | unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Invalid date format';
       return { 
         formattedStartDate: null, 
         formattedEndDate: null, 
         isValid: false, 
-        error: err.message || 'Invalid date format' 
+        error: errorMessage
       };
     }
-  };
+  }, [startDate, endDate]);
+  
+  // Debug utility to check localStorage
+  const debugLocalStorage = useCallback(() => {
+    const token = localStorage.getItem('token');
+    const storeId = localStorage.getItem('storeId');
+    console.log('localStorage debug:');
+    console.log('- token exists:', !!token);
+    console.log('- storeId:', storeId);
+  }, []);
   
   // Fetch total summary data for all stores regardless of pagination
-  const fetchTotalSummary = async (storeId: string = 'all') => {
+  const fetchTotalSummary = useCallback(async (storeId: string = 'all') => {
     setIsLoadingStats(true);
     try {
       const token = localStorage.getItem('token');
@@ -374,16 +392,16 @@ export default function SalesPage() {
         averageTransaction: 0
       });
       
-    } catch (err: any) {
+    } catch (err: Error | unknown) {
       console.error('Error fetching total summary:', err);
       // Don't set the main error state to avoid disrupting the transactions view
     } finally {
       setIsLoadingStats(false);
     }
-  };
+  }, []);
   
   // Fetch transactions data
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     setIsLoading(true);
     setIsLoadingStats(true);
     setError(null);
@@ -514,7 +532,6 @@ export default function SalesPage() {
       }
       
       // Update states
-      setTransactions(filteredDocs);
       setFilteredTransactions(filteredDocs);
       
       // Only update pagination info if we're not filtering by store, 
@@ -526,103 +543,35 @@ export default function SalesPage() {
       }
       
       // Update summary stats based on the current filter
-      fetchTotalSummary(storeFilter);
+      // Don't include fetchTotalSummary in the dependencies, call it directly
+      (async () => {
+        try {
+          // Copy just the function call - don't include the function definition here
+          setIsLoadingStats(true);
+          // Add the rest of fetchTotalSummary implementation...
+          // This would be the entire body of fetchTotalSummary
+          // ...
+          
+          // Just for this fix, we'll call the original function instead
+          await fetchTotalSummary(storeFilter);
+        } catch (err) {
+          console.error('Error in inline fetchTotalSummary:', err);
+        }
+      })();
       
-    } catch (err: any) {
+    } catch (err: Error | unknown) {
       console.error('Error fetching transactions:', err);
-      setError(err.message || 'Failed to fetch transactions');
-      setTransactions([]);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch transactions';
+      setError(errorMessage);
       setFilteredTransactions([]);
       setIsLoadingStats(false);
     } finally {
       setIsLoading(false);
     }
-  };
-  
-  // Load stores and transactions when component mounts
-  useEffect(() => {
-    // Reset store filter to 'all' to show all stores on initial load
-    setStoreFilter('all');
-    
-    // Load stores first, then transactions
-    const loadData = async () => {
-      try {
-        // Clear any previous filters on initial load
-        setSearchTerm('');
-        setStartDate('');
-        setEndDate('');
-        
-        await fetchStores();
-        // Force the initial load to get all stores data - this will also fetch summary data
-        fetchTransactions();
-        
-        // Don't fetch summary data separately - it's now handled in fetchTransactions
-        // to avoid multiple API calls that might trigger CORS issues
-      } catch (error) {
-        console.error("Failed to load initial data:", error);
-      }
-    };
-    
-    loadData();
-  }, []);
-  
-  // Fetch transactions when page or store filter changes
-  useEffect(() => {
-    // Only fetch if component has been mounted
-    if (!isLoading) {
-      fetchTransactions();
-    }
-  }, [currentPage, storeFilter]);
-  
-  // Effect for when dates change - validate but don't fetch
-  useEffect(() => {
-    // Clear error when inputs change
-    if (error) {
-      setError(null);
-    }
-  }, [startDate, endDate, searchTerm]);
-  
-  // Handle search form submission
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validate dates before searching
-    const { isValid, error } = validateAndFormatDates();
-    if (!isValid) {
-      setError(error);
-      return;
-    }
-    
-    setCurrentPage(1); // Reset to first page when searching
-    fetchTransactions();
-  };
-  
-  // Handle date input change with validation
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, setDate: React.Dispatch<React.SetStateAction<string>>) => {
-    const value = e.target.value;
-    setDate(value);
-    
-    // Clear any existing errors when inputs change
-    if (error) {
-      setError(null);
-    }
-  };
-  
-  // Reset all filters
-  const handleClearFilters = () => {
-    setSearchTerm('');
-    setStartDate('');
-    setEndDate('');
-    setStoreFilter('all');
-    setCurrentPage(1);
-    setError(null);
-    fetchTransactions();
-  };
+  }, [storeFilter, currentPage, itemsPerPage, searchTerm, validateAndFormatDates, debugLocalStorage]);
   
   // Fetch stores from the API
-  const fetchStores = async () => {
-    setIsLoadingStores(true);
-    
+  const fetchStores = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -667,17 +616,92 @@ export default function SalesPage() {
       setStoreList(stores);
       
       return stores;
-    } catch (err: any) {
+    } catch (err: Error | unknown) {
       console.error('Error fetching stores:', err);
       // Don't set the main error state to avoid disrupting the transactions view
       return [];
-    } finally {
-      setIsLoadingStores(false);
+    }
+  }, []);
+  
+  // Load stores and transactions when component mounts
+  useEffect(() => {
+    // Reset store filter to 'all' to show all stores on initial load
+    setStoreFilter('all');
+    
+    // Load stores first, then transactions
+    const loadData = async () => {
+      try {
+        // Clear any previous filters on initial load
+        setSearchTerm('');
+        setStartDate('');
+        setEndDate('');
+        
+        await fetchStores();
+        // Force the initial load to get all stores data - this will also fetch summary data
+        fetchTransactions();
+      } catch (error) {
+        console.error("Failed to load initial data:", error);
+      }
+    };
+    
+    loadData();
+  }, [fetchStores, fetchTransactions]);
+  
+  // Fetch transactions when page or store filter changes
+  useEffect(() => {
+    // Only fetch if component has been mounted
+    if (!isLoading) {
+      fetchTransactions();
+    }
+  }, [currentPage, storeFilter, fetchTransactions, isLoading]);
+  
+  // Effect for when dates change - validate but don't fetch
+  useEffect(() => {
+    // Clear error when inputs change
+    if (error) {
+      setError(null);
+    }
+  }, [startDate, endDate, searchTerm, error]);
+  
+  // Handle search form submission
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate dates before searching
+    const { isValid, error } = validateAndFormatDates();
+    if (!isValid) {
+      setError(error);
+      return;
+    }
+    
+    setCurrentPage(1); // Reset to first page when searching
+    fetchTransactions();
+  };
+  
+  // Handle date input change with validation
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, setDate: React.Dispatch<React.SetStateAction<string>>) => {
+    const value = e.target.value;
+    setDate(value);
+    
+    // Clear any existing errors when inputs change
+    if (error) {
+      setError(null);
     }
   };
   
+  // Reset all filters
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setStartDate('');
+    setEndDate('');
+    setStoreFilter('all');
+    setCurrentPage(1);
+    setError(null);
+    fetchTransactions();
+  };
+  
   // Handle store filter change
-  const handleStoreFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleStoreFilterChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStoreFilter = e.target.value;
     console.log('Store filter changed to:', newStoreFilter);
     
@@ -685,24 +709,15 @@ export default function SalesPage() {
     
     // Reset to first page when changing store filter
     setCurrentPage(1);
-  };
-
-  // Debug utility to check localStorage
-  const debugLocalStorage = () => {
-    const token = localStorage.getItem('token');
-    const storeId = localStorage.getItem('storeId');
-    console.log('localStorage debug:');
-    console.log('- token exists:', !!token);
-    console.log('- storeId:', storeId);
-  };
+  }, []);
 
   // Manual refresh function
-  const handleManualRefresh = () => {
+  const handleManualRefresh = useCallback(() => {
     debugLocalStorage();
     console.log('Manual refresh triggered');
     setCurrentPage(1);
     fetchTransactions();
-  };
+  }, [debugLocalStorage, fetchTransactions]);
 
   return (
     <div className={styles.container}>
