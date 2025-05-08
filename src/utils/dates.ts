@@ -54,7 +54,8 @@ export const parseDateString = (dateStr: string): string | null => {
     }
     
     return date.toISOString().split('T')[0];
-  } catch (error) {
+  } catch {
+    // Error is caught but not used
     return null;
   }
 };

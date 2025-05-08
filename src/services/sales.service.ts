@@ -17,6 +17,14 @@ export interface PaymentItem {
   updatedAt: string;
 }
 
+export interface Customer {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+}
+
 export interface Transaction {
   id: string;
   transactionReference: string;
@@ -29,7 +37,7 @@ export interface Transaction {
   status: string;
   createdAt: string;
   updatedAt: string;
-  customer: any;
+  customer: Customer | null;
   cashier: {
     id: string;
     firstName: string;
@@ -80,6 +88,8 @@ export interface SalesFilterParams {
   getAllStores?: boolean;
 }
 
+type QueryParams = Record<string, string>;
+
 /**
  * Service for handling sales-related API operations
  */
@@ -97,7 +107,7 @@ export const salesService = {
       getAllStores
     } = params;
     
-    const queryParams: Record<string, string> = {
+    const queryParams: QueryParams = {
       page: page.toString(),
       limit: limit.toString()
     };
@@ -148,7 +158,7 @@ export const salesService = {
     
     const countResponse = await api.get<PaginatedTransactionsResponse>(
       '/sales/shops-transactions', 
-      countParams as any, 
+      countParams as QueryParams, 
       headers
     );
     
@@ -172,7 +182,7 @@ export const salesService = {
     
     const sampleResponse = await api.get<PaginatedTransactionsResponse>(
       '/sales/shops-transactions', 
-      sampleParams as any, 
+      sampleParams as QueryParams, 
       headers
     );
     
