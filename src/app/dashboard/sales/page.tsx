@@ -505,8 +505,8 @@ export default function SalesPage() {
       }
       
       console.log('Number of transactions:', data.data.docs.length);
-      console.log('Store IDs in response:', [...new Set(data.data.docs.map(t => t.store.id))]);
-      console.log('Store names in response:', [...new Set(data.data.docs.map(t => t.store.name))]);
+      console.log('Store IDs in response:', [...new Set(data.data.docs.map((t: Transaction) => t.store.id))]);
+      console.log('Store names in response:', [...new Set(data.data.docs.map((t: Transaction) => t.store.name))]);
       
       // Filter transactions by store if needed
       let filteredDocs = [...data.data.docs];
@@ -514,7 +514,7 @@ export default function SalesPage() {
       // If we're filtering by a specific store, ensure that's all we display
       if (storeFilter !== 'all') {
         const beforeCount = filteredDocs.length;
-        filteredDocs = filteredDocs.filter(transaction => transaction.store.id === storeFilter);
+        filteredDocs = filteredDocs.filter((transaction: Transaction) => transaction.store.id === storeFilter);
         const afterCount = filteredDocs.length;
         
         console.log(`Store filter check: ${beforeCount} → ${afterCount} transactions`);
@@ -607,7 +607,7 @@ export default function SalesPage() {
       }
       
       // Map store data to the format needed for the dropdown
-      const stores = data.data.map(store => ({
+      const stores = data.data.map((store: Store) => ({
         id: store.id,
         name: store.name
       }));
