@@ -21,7 +21,7 @@ const formatCurrency = (amount: number) => {
 };
 
 // Helper to format numbers with comma separators
-const formatNumber = (num: number | undefined) => {
+const formatNumber = (num: number | undefined): string => {
   if (num === undefined) return '-';
   return num.toLocaleString('en-US') || '-';
 };
