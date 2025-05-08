@@ -355,7 +355,7 @@ export default function SalesPage() {
               // The total from the first API call includes all stores
               
               // Count unique stores in our sample to estimate better
-              const uniqueStores = new Set(relevantTransactions.map(t => t.store.id)).size;
+              const uniqueStores = new Set(relevantTransactions.map((t: Transaction) => t.store.id)).size;
               console.log(`Sample contains transactions from ${uniqueStores} unique stores`);
               
               // If we have store IDs in the sample, ensure we're including all transactions
