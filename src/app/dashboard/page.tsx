@@ -21,8 +21,9 @@ const formatCurrency = (amount: number) => {
 };
 
 // Helper to format numbers with comma separators
-const formatNumber = (num: number) => {
-  return num?.toLocaleString('en-US') || '-';
+const formatNumber = (num: number | undefined) => {
+  if (num === undefined) return '-';
+  return num.toLocaleString('en-US') || '-';
 };
 
 // Define proper types for the data
@@ -138,7 +139,7 @@ export default function Dashboard() {
           <div className={styles.statCardContent}>
             <div>
               <p className={styles.statTitle}>Total Transactions</p>
-              <p className={styles.statValue}>{formatNumber(overview?.transactionCount) ?? '-'}</p>
+              <p className={styles.statValue}>{formatNumber(overview?.transactionCount)}</p>
             </div>
           </div>
         </div>
