@@ -4,7 +4,7 @@ const API_BASE_URL = 'https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1';
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   headers?: Record<string, string>;
-  body?: any;
+  body?: unknown;
   params?: Record<string, string>;
 }
 
@@ -148,14 +148,14 @@ export const api = {
   /**
    * Make a POST request
    */
-  async post<T>(endpoint: string, body?: any, params?: Record<string, string>, headers?: Record<string, string>): Promise<ApiResponse<T>> {
+  async post<T>(endpoint: string, body?: unknown, params?: Record<string, string>, headers?: Record<string, string>): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'POST', body, params, headers });
   },
   
   /**
    * Make a PUT request
    */
-  async put<T>(endpoint: string, body?: any, params?: Record<string, string>, headers?: Record<string, string>): Promise<ApiResponse<T>> {
+  async put<T>(endpoint: string, body?: unknown, params?: Record<string, string>, headers?: Record<string, string>): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'PUT', body, params, headers });
   },
   
