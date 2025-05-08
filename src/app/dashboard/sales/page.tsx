@@ -721,9 +721,7 @@ export default function SalesPage() {
 
   return (
     <div className={styles.container}>
-      {/* Log the current store filter for debugging */}
-      {console.log('Rendering with store filter:', storeFilter)}
-      {console.log('Current store list:', storeList)}
+      {/* Log statements removed to fix type error */}
       
       <div className={styles.header}>
         <h1 className={styles.title}>Sales Transactions</h1>
