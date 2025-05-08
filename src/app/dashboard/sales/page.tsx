@@ -325,7 +325,7 @@ export default function SalesPage() {
           if (sampleData.status && sampleData.data && Array.isArray(sampleData.data.docs)) {
             // Filter transactions if necessary
             const relevantTransactions = storeId !== 'all'
-              ? sampleData.data.docs.filter(t => t.store.id === storeId)
+              ? sampleData.data.docs.filter((t: Transaction) => t.store.id === storeId)
               : sampleData.data.docs;
             
             console.log(`Using ${relevantTransactions.length} transactions for calculations`);
