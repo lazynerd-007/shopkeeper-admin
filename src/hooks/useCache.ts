@@ -48,6 +48,34 @@ export function useCache<T>(
     return now - item.timestamp < ttl;
   }, [ttl]);
   
+  // Fetch and cache data (moved before fetchData to fix reference error)
+  const fetchDataAndCache = useCallback(async (cacheKey: string, isBackground: boolean = false): Promise<void> => {
+    try {
+      if (!isBackground) {
+        setIsLoading(true);
+      }
+      
+      const result = await fetchFn();
+      
+      // Store in cache
+      cache.current.set(cacheKey, {
+        data: result,
+        timestamp: Date.now(),
+        key: cacheKey
+      });
+      
+      setData(result);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('An error occurred'));
+      throw err;
+    } finally {
+      if (!isBackground) {
+        setIsLoading(false);
+      }
+    }
+  }, [fetchFn]);
+  
   // Fetch data function
   const fetchData = useCallback(async (cacheKey: string, force: boolean = false): Promise<void> => {
     // Don't fetch if already fetching this key
@@ -84,34 +112,6 @@ export function useCache<T>(
       setIsLoading(false);
     }
   }, [isCacheValid, ttl, backgroundRefresh, fetchDataAndCache]);
-  
-  // Fetch and cache data
-  const fetchDataAndCache = useCallback(async (cacheKey: string, isBackground: boolean = false): Promise<void> => {
-    try {
-      if (!isBackground) {
-        setIsLoading(true);
-      }
-      
-      const result = await fetchFn();
-      
-      // Store in cache
-      cache.current.set(cacheKey, {
-        data: result,
-        timestamp: Date.now(),
-        key: cacheKey
-      });
-      
-      setData(result);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('An error occurred'));
-      throw err;
-    } finally {
-      if (!isBackground) {
-        setIsLoading(false);
-      }
-    }
-  }, [fetchFn]);
   
   // Expose a refetch method to manually refresh data
   const refetch = useCallback(async (): Promise<void> => {
