@@ -29,17 +29,6 @@ const formatNumber = (num: number) => {
 // Use environment variable instead of hardcoded base URL
 const BASE_URL = env.API_BASE_URL;
 
-// Function to check if a merchant is active based on last activity date
-const isActiveBasedOnActivity = (lastTransactionDate: string): boolean => {
-  if (!lastTransactionDate) return false;
-  
-  const lastActivity = new Date(lastTransactionDate);
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
-  return lastActivity >= thirtyDaysAgo;
-};
-
 // Define proper interface for merchants
 interface Merchant {
   id: string;
@@ -47,6 +36,7 @@ interface Merchant {
   branch: string;
   contactEmail: string;
   status: string;
+  isActive: boolean;
   transactionAmount: number;
   transactionCount: number;
   lastTransactionDate: string;
@@ -82,7 +72,8 @@ export default function MerchantsPage() {
           page: String(currentPage),
           limit: String(rowsPerPage),
           search: searchTerm || '',
-          status: statusFilter || '',
+          // Send isActive parameter based on filter selection
+          ...(statusFilter && { isActive: statusFilter === 'active' ? 'true' : 'false' }),
           startDate: '',
           endDate: '',
         });
@@ -188,7 +179,7 @@ export default function MerchantsPage() {
               <option value="inactive">Inactive</option>
             </select>
             <p className="text-xs text-gray-500 mt-1">
-              Status shows recent activity within the last 30 days.
+              Status shows merchant activity based on API data.
             </p>
           </div>
         </div>
@@ -236,8 +227,8 @@ export default function MerchantsPage() {
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{merchant.branch}</td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{merchant.contactEmail}</td>
                   <td className="px-4 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${isActiveBasedOnActivity(merchant.lastTransactionDate) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                      {isActiveBasedOnActivity(merchant.lastTransactionDate) ? 'Active' : 'Inactive'}
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${merchant.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      {merchant.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatCurrency(merchant.transactionAmount)}</td>
