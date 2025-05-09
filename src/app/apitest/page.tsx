@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function ApiTestPage() {
   const [loading, setLoading] = useState(false);
-  const [response, setResponse] = useState<any>(null);
+  const [response, setResponse] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE5IiwiZW1haWwiOiJhZG1pbkBibHVwZW5ndWluLmNvbSIsImZpcnN0TmFtZSI6IkJsdVBlbmd1aW4iLCJsYXN0TmFtZSI6IkFmcmljYSIsInRpbWUiOiIyMDI1LTA1LTA5VDEwOjUxOjE3LjQ3NVoiLCJleHBpcmUiOiIyMDI1LTA1LTEwVDEwOjUxOjE3LjQ3NVoiLCJpYXQiOjE3NDY3ODc4NzcsImV4cCI6MTc0Njg3NDI3N30.ZUmD3ccUzBqg-0KrNI2GZZuF3-VL8xus8SUHxhQbCSg";

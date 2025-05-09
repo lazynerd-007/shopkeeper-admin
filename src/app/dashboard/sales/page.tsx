@@ -297,7 +297,7 @@ export default function SalesPage() {
         
         if (summaryData.data && Array.isArray(summaryData.data.docs)) {
           // Look for the specific store in the merchant summary data
-          storeData = summaryData.data.docs.find((m: any) => m.id === storeId);
+          storeData = summaryData.data.docs.find((m: { id: string }) => m.id === storeId);
         }
         
         if (storeData) {
@@ -326,7 +326,7 @@ export default function SalesPage() {
           let totalAmount = 0;
           let totalCount = 0;
           
-          merchants.forEach((merchant: any) => {
+          merchants.forEach((merchant: { transactionAmount?: number; transactionCount?: number }) => {
             totalAmount += merchant.transactionAmount || 0;
             totalCount += merchant.transactionCount || 0;
           });
