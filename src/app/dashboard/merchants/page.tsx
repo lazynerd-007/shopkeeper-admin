@@ -99,7 +99,7 @@ export default function MerchantsPage() {
         setMerchants(merchantData);
         setTotal(data.data.total);
         setTotalPages(data.data.pages);
-      } catch (err: Error | unknown) {
+      } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load merchants.';
         setError(errorMessage);
       } finally {

@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 // Simple API test endpoint
 export async function GET(request: Request) {
