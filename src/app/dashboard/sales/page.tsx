@@ -268,6 +268,9 @@ export default function SalesPage() {
         params.append('getAllStores', 'true');
       }
       
+      // Add cache-busting timestamp to prevent browser caching
+      params.append('_t', Date.now().toString());
+      
       // Use the shop transactions endpoint for summary data
       const summaryUrl = `${env.API_BASE_URL}/sales/shops-transactions?${params.toString()}`;
       
@@ -275,7 +278,9 @@ export default function SalesPage() {
       
       const summaryResponse = await fetch(summaryUrl, {
         method: 'GET',
-        headers: headers
+        headers: headers,
+        // Add cache control to prevent browser caching
+        cache: 'no-store'
       });
       
       if (!summaryResponse.ok) {
@@ -416,6 +421,9 @@ export default function SalesPage() {
         params.append('getAllStores', 'true');
       }
       
+      // Add cache-busting timestamp to prevent browser caching
+      params.append('_t', Date.now().toString());
+      
       // Complete URL with params
       url = `${url}?${params.toString()}`;
       
@@ -464,7 +472,9 @@ export default function SalesPage() {
       
       const response = await fetch(url, {
         method: 'GET',
-        headers: headers
+        headers: headers,
+        // Add cache control to prevent browser caching
+        cache: 'no-store'
       });
       
       if (!response.ok) {
@@ -673,12 +683,31 @@ export default function SalesPage() {
   // Handle store filter change
   const handleStoreFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStoreFilter = e.target.value;
-    setIsLoadingStats(true); // Show loading state when switching stores
-    setIsLoading(true); // Also show loading state for the table
-    setStoreFilter(newStoreFilter);
-    setCurrentPage(1); // Reset to page 1 when changing stores
     
-    // Clear lastFetchedUrl to ensure we always fetch new data
+    // Only proceed if the store filter actually changed
+    if (newStoreFilter === storeFilter) {
+      console.log('Store filter unchanged, skipping update');
+      return;
+    }
+    
+    console.log(`Changing store filter from ${storeFilter} to ${newStoreFilter}`);
+    
+    // Show loading states
+    setIsLoadingStats(true);
+    setIsLoading(true);
+    
+    // Reset stats to null to ensure UI shows loading state
+    setTotalStats({
+      totalSales: null,
+      totalTransactions: null,
+      averageTransaction: null
+    });
+    
+    // Update filter and reset page
+    setStoreFilter(newStoreFilter);
+    setCurrentPage(1);
+    
+    // Clear lastFetchedUrl to force a new data fetch
     lastFetchedUrl.current = '';
     
     // Force a fetch immediately after the state updates
@@ -756,268 +785,12 @@ export default function SalesPage() {
             </div>
             <div className={`${styles.statIcon} ${styles.purpleIcon}`}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
             </div>
           )}
         </div>
-
-        {/* Average Transaction Card */}
-        <div className={styles.statCard}>
-          {isLoadingStats ? (
-            <SkeletonLoader />
-          ) : (
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={styles.statTitle}>Average Transaction</p>
-                <p className={styles.statValue} style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                  {formatCurrency(totalStats.averageTransaction || 0)}
-                </p>
-                {storeFilter !== 'all' && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    {storeList.find(store => store.id === storeFilter)?.name || 'Selected Store'}
-                  </p>
-                )}
-            </div>
-            <div className={`${styles.statIcon} ${styles.greenIcon}`}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
-                </svg>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className={styles.filtersContainer}>
-        <form onSubmit={handleSearch} className="w-full flex flex-col md:flex-row gap-4">
-        <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>Store</label>
-          <select 
-            className={styles.filterSelect}
-              value={storeFilter}
-              onChange={handleStoreFilterChange}
-            >
-              <option value="all">All Stores</option>
-              {storeList.map(store => (
-                <option key={store.id} value={store.id}>{store.name}</option>
-            ))}
-          </select>
-        </div>
-        
-        <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>Start Date</label>
-            <input 
-              type="date" 
-              className={styles.filterSelect}
-              value={startDate}
-              onChange={(e) => handleDateChange(e, setStartDate)}
-            />
-          </div>
-          
-          <div className={styles.filterGroup}>
-            <label className={styles.filterLabel}>End Date</label>
-            <input 
-              type="date" 
-            className={styles.filterSelect}
-              value={endDate}
-              onChange={(e) => handleDateChange(e, setEndDate)}
-            />
-        </div>
-        
-        <div className={styles.filterGroup}>
-          <label className={styles.filterLabel}>Search</label>
-            <div className="flex">
-          <input 
-            type="text" 
-                placeholder="Search by reference or product"
-            className={styles.searchInput}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-              <button 
-                type="submit"
-                className="ml-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-              >
-                Search
-              </button>
-            </div>
-        </div>
-        </form>
-      </div>
-
-      {/* Display error message if there's an error */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-4">
-          {error}
-        </div>
-      )}
-
-      {/* Sales Table */}
-      <div className={styles.tableContainer}>
-        <div className={styles.tableHeader}>
-          <h2 className={styles.sectionTitle}>
-            {storeFilter !== 'all' 
-              ? `Sales Transactions - ${storeList.find(store => store.id === storeFilter)?.name || 'Selected Store'}`
-              : 'Sales Transactions'
-            }
-          </h2>
-          <p className={styles.sectionSubtitle}>
-            {isLoading ? 'Loading transactions...' : `Showing ${filteredTransactions.length} of ${totalItems} transactions
-            ${storeFilter !== 'all' ? '(Filtered by store)' : ''}`}
-          </p>
-        </div>
-        
-        {isLoading ? (
-          <div>
-            <div className="overflow-x-auto">
-              <table className={styles.table}>
-                <thead>
-                  <tr className={styles.tableHeaderRow}>
-                    <th className={styles.tableHeaderCell}>ID</th>
-                    <th className={styles.tableHeaderCell}>Reference</th>
-                    <th className={styles.tableHeaderCell}>Date</th>
-                    <th className={styles.tableHeaderCell}>Amount</th>
-                    <th className={styles.tableHeaderCell}>Status</th>
-                    <th className={styles.tableHeaderCell}>Store</th>
-                    <th className={styles.tableHeaderCell}>Branch</th>
-                    <th className={styles.tableHeaderCell}>Cashier</th>
-                    <th className={styles.tableHeaderCell}>Items</th>
-                    <th className={styles.tableHeaderCell}>Payment Method</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...Array(5)].map((_, index) => (
-                    <tr key={index} className={styles.tableRow}>
-                      {[...Array(10)].map((_, cellIndex) => (
-                        <td key={cellIndex} className={styles.tableCell}>
-                          <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className={styles.pagination}>
-              <button
-                disabled={true}
-                className={`${styles.paginationButton} opacity-50 cursor-not-allowed`}
-              >
-                Previous
-              </button>
-              
-              <span className="mx-2 text-sm text-gray-400 animate-pulse">
-                Loading...
-              </span>
-              
-              <button
-                disabled={true}
-                className={`${styles.paginationButton} opacity-50 cursor-not-allowed`}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-        <div className="overflow-x-auto">
-          <table className={styles.table}>
-                <thead>
-                  <tr className={styles.tableHeaderRow}>
-                    <th className={styles.tableHeaderCell}>ID</th>
-                    <th className={styles.tableHeaderCell}>Reference</th>
-                <th className={styles.tableHeaderCell}>Date</th>
-                <th className={styles.tableHeaderCell}>Amount</th>
-                    <th className={styles.tableHeaderCell}>Status</th>
-                    <th className={styles.tableHeaderCell}>Store</th>
-                    <th className={styles.tableHeaderCell}>Branch</th>
-                    <th className={styles.tableHeaderCell}>Cashier</th>
-                    <th className={styles.tableHeaderCell}>Items</th>
-                <th className={styles.tableHeaderCell}>Payment Method</th>
-              </tr>
-            </thead>
-            <tbody>
-                  {filteredTransactions.length > 0 ? (
-                    filteredTransactions.map((transaction) => (
-                      <tr key={transaction.id} className={styles.tableRow}>
-                        <td className={styles.tableCell}>
-                          {transaction.id}
-                        </td>
-                        <td className={styles.tableCell}>
-                          {transaction.transactionReference}
-                        </td>
-                        <td className={styles.tableCell}>
-                          {formatDate(transaction.createdAt)}
-                        </td>
-                        <td className={styles.tableCell}>
-                          {formatCurrency(transaction.amountPaid)}
-                        </td>
-                        <td className={styles.tableCell}>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            transaction.status === 'paid' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {transaction.status}
-                          </span>
-                        </td>
-                        <td className={styles.tableCell}>
-                          {transaction.store.name}
-                        </td>
-                        <td className={styles.tableCell}>
-                          {transaction.branch.name}
-                        </td>
-                        <td className={styles.tableCell}>
-                          {`${transaction.cashier.firstName} ${transaction.cashier.lastName}`}
-                        </td>
-                        <td className={styles.tableCell}>
-                          {transaction.sales.length}
-                        </td>
-                        <td className={styles.tableCell}>
-                          {transaction.payments.length > 0 
-                            ? transaction.payments[0].paymentMethod 
-                            : 'N/A'}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={10} className="text-center py-8 text-gray-500">
-                        No transactions found
-                      </td>
-                </tr>
-                  )}
-            </tbody>
-          </table>
-        </div>
-        
-        {/* Pagination */}
-        <div className={styles.pagination}>
-              <button
-                onClick={() => setCurrentPage(page => Math.max(page - 1, 1))}
-                disabled={currentPage === 1}
-                className={`${styles.paginationButton} ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                Previous
-              </button>
-              
-              <span className="mx-2 text-sm text-gray-600">
-                Page {currentPage} of {totalPages}
-              </span>
-              
-              <button
-                onClick={() => setCurrentPage(page => Math.min(page + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className={`${styles.paginationButton} ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                Next
-              </button>
-        </div>
-          </>
-        )}
       </div>
     </div>
   );
