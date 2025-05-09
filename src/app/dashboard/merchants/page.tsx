@@ -72,8 +72,8 @@ export default function MerchantsPage() {
           page: String(currentPage),
           limit: String(rowsPerPage),
           search: searchTerm || '',
-          // Send isActive parameter based on filter selection
-          ...(statusFilter && { isActive: statusFilter === 'active' ? 'true' : 'false' }),
+          // Use status parameter instead of isActive
+          ...(statusFilter && { status: statusFilter }),
           startDate: '',
           endDate: '',
         });
@@ -85,7 +85,38 @@ export default function MerchantsPage() {
         const data = await res.json();
         if (!res.ok || !data.status) throw new Error(data.message || 'Failed to fetch merchants');
         
-        setMerchants(data.data.docs);
+        // Log the first merchant to check the actual structure
+        if (data.data.docs.length > 0) {
+          console.log('First merchant data:', data.data.docs[0]);
+        }
+        
+        // Ensure each merchant has an isActive property calculated based on status or last activity
+        const merchantData = data.data.docs.map((merchant: Merchant | any) => {
+          // If merchant has a status property, use it to set isActive
+          if (merchant.status) {
+            return {
+              ...merchant,
+              isActive: merchant.status.toLowerCase() === 'active'
+            };
+          }
+          // If no status but has lastTransactionDate, calculate based on activity
+          else if (merchant.lastTransactionDate) {
+            const lastActivity = new Date(merchant.lastTransactionDate);
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            return {
+              ...merchant,
+              isActive: lastActivity >= thirtyDaysAgo
+            };
+          }
+          // Default to false if no data available
+          return {
+            ...merchant,
+            isActive: false
+          };
+        });
+        
+        setMerchants(merchantData);
         setTotal(data.data.total);
         setTotalPages(data.data.pages);
       } catch (err: Error | unknown) {

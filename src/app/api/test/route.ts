@@ -1,37 +1,61 @@
+import { NextResponse } from 'next/server';
+
 // Simple API test endpoint
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // Test token provided by the user
-    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE5IiwiZW1haWwiOiJhZG1pbkBibHVwZW5ndWluLmNvbSIsImZpcnN0TmFtZSI6IkJsdVBlbmd1aW4iLCJsYXN0TmFtZSI6IkFmcmljYSIsInRpbWUiOiIyMDI1LTA1LTA5VDEwOjUxOjE3LjQ3NVoiLCJleHBpcmUiOiIyMDI1LTA1LTEwVDEwOjUxOjE3LjQ3NVoiLCJpYXQiOjE3NDY3ODc4NzcsImV4cCI6MTc0Njg3NDI3N30.ZUmD3ccUzBqg-0KrNI2GZZuF3-VL8xus8SUHxhQbCSg";
-    const storeId = "7";
+    // Get query parameters
+    const url = new URL(request.url);
+    const storeId = url.searchParams.get('storeId') || localStorage.getItem('storeId');
+    const token = url.searchParams.get('token') || localStorage.getItem('token');
     
-    // Make a test request to the dashboard endpoint
-    const response = await fetch("https://api.myshopkeeper.net/api/v1/users/dashboard", {
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-        "D-UUID": "645545453533",
-        "S-UUID": storeId
-      }
+    if (!token || !storeId) {
+      return NextResponse.json(
+        { error: 'Missing token or storeId' }, 
+        { status: 400 }
+      );
+    }
+    
+    // Make request to merchant summary endpoint
+    const headers = {
+      'D-UUID': '645545453533',
+      'S-UUID': storeId,
+      'Authorization': `Bearer ${token}`
+    };
+    
+    // Call merchant summary API
+    const params = new URLSearchParams({
+      page: '1',
+      limit: '10',
     });
     
-    const data = await response.json();
+    const apiUrl = `https://api.myshopkeeper.net/api/v1/stores/summary/merchant?${params.toString()}`;
     
-    // Return both the API response and request details for debugging
-    return Response.json({
-      success: true,
-      apiResponse: data,
-      requestDetails: {
-        url: "https://api.myshopkeeper.net/api/v1/users/dashboard",
-        token: token.substring(0, 20) + "...", // Truncate for security
-        storeId: storeId
-      }
+    console.log('Making request to:', apiUrl);
+    const res = await fetch(apiUrl, {
+      method: 'GET',
+      headers,
     });
-  } catch (error) {
-    console.error("API test failed:", error);
-    return Response.json({
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error"
-    }, { status: 500 });
+    
+    const data = await res.json();
+    
+    // Log response structure to help debug
+    console.log('API Response structure:', Object.keys(data));
+    console.log('API Response status:', data.status);
+    
+    if (data.data && data.data.docs && data.data.docs.length > 0) {
+      const firstMerchant = data.data.docs[0];
+      console.log('First merchant fields:', Object.keys(firstMerchant));
+      console.log('First merchant status:', firstMerchant.status);
+      console.log('First merchant isActive:', firstMerchant.isActive);
+      console.log('First merchant lastTransactionDate:', firstMerchant.lastTransactionDate);
+    }
+    
+    return NextResponse.json(data);
+  } catch (err) {
+    console.error('Test API error:', err);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Unknown error' }, 
+      { status: 500 }
+    );
   }
 } 
