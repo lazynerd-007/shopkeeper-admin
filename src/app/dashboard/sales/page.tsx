@@ -677,6 +677,14 @@ export default function SalesPage() {
     setIsLoading(true); // Also show loading state for the table
     setStoreFilter(newStoreFilter);
     setCurrentPage(1); // Reset to page 1 when changing stores
+    
+    // Clear lastFetchedUrl to ensure we always fetch new data
+    lastFetchedUrl.current = '';
+    
+    // Force a fetch immediately after the state updates
+    setTimeout(() => {
+      fetchTransactions();
+    }, 0);
   };
 
   return (

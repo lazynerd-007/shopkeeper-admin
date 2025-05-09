@@ -135,8 +135,6 @@ export default function Login() {
               />
             </div>
 
-
-
             <div className={styles.formGroup}>
               <label htmlFor="password" className={styles.label}>Password</label>
               <input
@@ -148,12 +146,6 @@ export default function Login() {
                 placeholder="••••••••"
                 required
               />
-            </div>
-
-            <div className={styles.forgotPasswordLink}>
-              <Link href="/forgot-password">
-                Forgot password?
-              </Link>
             </div>
 
             <button
