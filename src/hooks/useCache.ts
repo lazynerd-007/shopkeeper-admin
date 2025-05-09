@@ -116,7 +116,7 @@ export function useCache<T>(
   // Expose a refetch method to manually refresh data
   const refetch = useCallback(async (): Promise<void> => {
     await fetchData(key, true);
-  }, [fetchData, key]);
+  }, [fetchData, key, fetchDataAndCache]);
   
   // Initial fetch on mount
   useEffect(() => {

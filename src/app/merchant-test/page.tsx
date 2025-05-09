@@ -52,7 +52,14 @@ export default function MerchantTestPage() {
         console.log('First merchant data:', data.data.docs[0]);
         
         // Transform the data to show key status information
-        const merchantData = data.data.docs.map((m: any) => ({
+        const merchantData = data.data.docs.map((m: {
+          id: string;
+          merchant: string;
+          branch: string;
+          status: string;
+          lastTransactionDate: string;
+          [key: string]: unknown;
+        }) => ({
           id: m.id,
           merchant: m.merchant,
           branch: m.branch,
