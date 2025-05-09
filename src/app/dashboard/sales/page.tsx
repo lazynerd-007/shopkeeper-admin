@@ -123,12 +123,12 @@ const formatCurrency = (amount: number, currency: string = 'GHS') => {
 
 // Add a skeleton loader component
 const SkeletonLoader = () => (
-  <div className="animate-pulse flex space-x-4 w-full">
-    <div className="flex-1 space-y-4 py-1">
-      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-      <div className="h-6 bg-gray-200 rounded w-5/6"></div>
+  <div className="flex items-center justify-between">
+    <div>
+      <div className="h-5 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+      <div className="h-8 bg-gray-200 rounded w-32 animate-pulse"></div>
     </div>
-    <div className="rounded-full bg-gray-200 h-12 w-12"></div>
+    <div className="h-10 w-10 rounded-full bg-gray-200 animate-pulse"></div>
   </div>
 );
 
@@ -157,9 +157,9 @@ export default function SalesPage() {
   
   // State for total statistics
   const [totalStats, setTotalStats] = useState({
-    totalSales: 0,
-    totalTransactions: 0,
-    averageTransaction: 0
+    totalSales: null as number | null,
+    totalTransactions: null as number | null,
+    averageTransaction: null as number | null
   });
   
   // Add a ref to track if this is the initial render
@@ -231,14 +231,12 @@ export default function SalesPage() {
   // Fetch total summary data for all stores regardless of pagination
   const fetchTotalSummary = useCallback(async (storeId: string = 'all') => {
     setIsLoadingStats(true);
+    
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        throw new Error('You must be logged in to view sales data');
+        throw new Error('You must be logged in to view summary data');
       }
-      
-      // Get the default store ID from localStorage
-      const defaultStoreId = localStorage.getItem('storeId');
       
       // Set up headers
       const headers: Record<string, string> = {
@@ -246,166 +244,121 @@ export default function SalesPage() {
         'Authorization': `Bearer ${token}`
       };
       
-      // If fetching for a specific store, use that store's ID
-      // Otherwise, fall back to the default store ID for authentication
+      // Get the default store ID from localStorage
+      const defaultStoreId = localStorage.getItem('storeId');
+      
+      // Add S-UUID header based on the context
       if (storeId !== 'all') {
+        // When filtering by specific store, set the S-UUID to that store
         headers['S-UUID'] = storeId;
-        console.log('Fetching summary for specific store:', storeId);
       } else if (defaultStoreId) {
+        // When showing all stores, use the default store ID for authentication
         headers['S-UUID'] = defaultStoreId;
       }
       
-      // For the initial query, we need to get the total transaction count
-      // We'll use different approaches for "all stores" vs "specific store"
-      let url;
+      // Build params for the merchant summary endpoint
+      const params = new URLSearchParams({
+        page: '1',
+        limit: '100',  // Get a reasonably large result set
+        search: '',
+        status: '',
+        startDate: '',
+        endDate: ''
+      });
       
-      if (storeId === 'all') {
-        // For all stores, first fetch just the total count
-        url = `${env.API_BASE_URL}/sales/shops-transactions?limit=1&page=1&getAllStores=true`;
-      } else {
-        // For a specific store, use storeId in the header
-        url = `${env.API_BASE_URL}/sales/shops-transactions?limit=1&page=1`;
+      // If specific store, add that as a parameter
+      if (storeId !== 'all') {
+        params.append('storeId', storeId);
       }
       
-      console.log('Fetching count data via transactions endpoint:', url);
-      console.log('With headers:', JSON.stringify(headers));
+      // Use the merchant summary endpoint for all cases
+      const summaryUrl = `${env.API_BASE_URL}/stores/summary/merchant?${params.toString()}`;
       
-      const response = await fetch(url, {
+      console.log('Fetching merchant summary from:', summaryUrl);
+      
+      const summaryResponse = await fetch(summaryUrl, {
         method: 'GET',
         headers: headers
       });
       
-      if (!response.ok) {
-        throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+      if (!summaryResponse.ok) {
+        throw new Error(`HTTP Error: ${summaryResponse.status} ${summaryResponse.statusText}`);
       }
       
-      const data = await response.json();
-      console.log('Transaction count data:', data);
+      const summaryData = await summaryResponse.json();
       
-      if (!data.status) {
-        throw new Error(data.message || 'Failed to fetch summary data');
+      if (!summaryData.status) {
+        throw new Error(summaryData.message || 'Failed to fetch merchant summary data');
       }
       
-      // Get the total transaction count based on the current filter
-      let totalTransactions = 0;
-      
-      if (data.data && typeof data.data.total === 'number') {
-        if (storeId !== 'all') {
-          // For a specific store, we get the exact count from the API
-          totalTransactions = data.data.total;
-        } else {
-          // For all stores view, we need to get the true total count
-          totalTransactions = data.data.total;
+      if (storeId !== 'all') {
+        // For specific store, find matching store in response
+        let storeData = null;
+        
+        if (summaryData.data && Array.isArray(summaryData.data.docs)) {
+          // Look for the specific store in the merchant summary data
+          storeData = summaryData.data.docs.find((m: any) => m.id === storeId);
         }
         
-        // Now fetch a representative sample to calculate total sales and average
-        try {
-          // Determine an appropriate sample size - larger for all stores
-          const sampleSize = storeId === 'all' ? 200 : Math.min(totalTransactions, 100);
+        if (storeData) {
+          // Update stats with accurate data from merchant summary
+          setTotalStats({
+            totalSales: storeData.transactionAmount || 0,
+            totalTransactions: storeData.transactionCount || 0,
+            averageTransaction: storeData.transactionCount > 0 
+              ? storeData.transactionAmount / storeData.transactionCount 
+              : 0
+          });
+        } else {
+          // No store data found
+          setTotalStats({
+            totalSales: null,
+            totalTransactions: null,
+            averageTransaction: null
+          });
+        }
+      } else {
+        // For all stores, aggregate the data from all merchants
+        if (summaryData.data && Array.isArray(summaryData.data.docs)) {
+          const merchants = summaryData.data.docs;
           
-          // Build the sample URL based on the store filter
-          const sampleUrl = `${env.API_BASE_URL}/sales/shops-transactions`;
-          const params = new URLSearchParams();
-          params.append('limit', sampleSize.toString());
-          params.append('page', '1');
+          // Calculate totals across all merchants
+          let totalAmount = 0;
+          let totalCount = 0;
           
-          if (storeId === 'all') {
-            params.append('getAllStores', 'true');
-          }
-          
-          const finalSampleUrl = `${sampleUrl}?${params.toString()}`;
-          
-          console.log(`Fetching sample of ${sampleSize} transactions for calculations`);
-          console.log('Sample URL:', finalSampleUrl);
-          
-          const sampleResponse = await fetch(finalSampleUrl, {
-            method: 'GET',
-            headers: headers
+          merchants.forEach((merchant: any) => {
+            totalAmount += merchant.transactionAmount || 0;
+            totalCount += merchant.transactionCount || 0;
           });
           
-          if (!sampleResponse.ok) {
-            throw new Error(`HTTP Error: ${sampleResponse.status} ${sampleResponse.statusText}`);
-          }
+          // Calculate average transaction
+          const averageTransaction = totalCount > 0 ? totalAmount / totalCount : 0;
           
-          const sampleData = await sampleResponse.json();
-          
-          if (sampleData.status && sampleData.data && Array.isArray(sampleData.data.docs)) {
-            // Filter transactions if necessary
-            const relevantTransactions = storeId !== 'all'
-              ? sampleData.data.docs.filter((t: Transaction) => t.store.id === storeId)
-              : sampleData.data.docs;
-            
-            console.log(`Using ${relevantTransactions.length} transactions for calculations`);
-            
-            if (relevantTransactions.length === 0) {
-              // No transactions found for this store
-              setTotalStats({
-                totalSales: 0,
-                totalTransactions: 0,
-                averageTransaction: 0
-              });
-              return;
-            }
-            
-            // Calculate total from the sample
-            const totalPaid = relevantTransactions.reduce((sum: number, t: Transaction) => sum + t.amountPaid, 0);
-            
-            // Calculate average transaction
-            const averageTransaction = totalPaid / relevantTransactions.length;
-            
-            // For specific store, use the exact count from the current filter
-            // For all stores, we need a different approach
-            let storeSpecificTotal = totalTransactions;
-            
-            if (storeId === 'all') {
-              // For all stores, we need to make sure we have the correct total count
-              // The total from the first API call includes all stores
-              
-              // Count unique stores in our sample to estimate better
-              const uniqueStores = new Set(relevantTransactions.map((t: Transaction) => t.store.id)).size;
-              console.log(`Sample contains transactions from ${uniqueStores} unique stores`);
-              
-              // If we have store IDs in the sample, ensure we're including all transactions
-              storeSpecificTotal = totalTransactions;
-            }
-            
-            // Calculate total sales based on average and count
-            const estimatedTotalSales = averageTransaction * storeSpecificTotal;
-            
-            console.log('Calculated stats:', {
-              totalTransactions: storeSpecificTotal,
-              averageTransaction,
-              estimatedTotalSales
-            });
-            
-            // Update the stats
-            setTotalStats({
-              totalSales: estimatedTotalSales,
-              totalTransactions: storeSpecificTotal,
-              averageTransaction: averageTransaction
-            });
-            
-            return;
-          }
-        } catch (err) {
-          console.error('Error calculating sales stats:', err);
+          setTotalStats({
+            totalSales: totalAmount,
+            totalTransactions: totalCount,
+            averageTransaction: averageTransaction
+          });
+        } else {
+          // No data available
+          setTotalStats({
+            totalSales: null,
+            totalTransactions: null,
+            averageTransaction: null
+          });
         }
       }
-      
-      // Fallback if we couldn't calculate better stats
+    } catch (err) {
+      console.error('Error fetching transaction summary:', err);
       setTotalStats({
-        totalSales: 0,
-        totalTransactions: totalTransactions || 0,
-        averageTransaction: 0
+        totalSales: null,
+        totalTransactions: null,
+        averageTransaction: null
       });
-      
-    } catch (err: Error | unknown) {
-      console.error('Error fetching total summary:', err);
-      // Don't set the main error state to avoid disrupting the transactions view
     } finally {
       setIsLoadingStats(false);
     }
-  }, [setTotalStats, setIsLoadingStats]);
+  }, []);
   
   // Fetch transactions data
   const fetchTransactions = useCallback(async () => {
@@ -662,11 +615,11 @@ export default function SalesPage() {
       return;
     }
     
-    // Only fetch if component has been mounted and it's not the first render
-    if (!isLoading) {
+    // Fetch data when store filter changes, even if isLoading is true
+    if (storeFilter) {
       fetchTransactions();
     }
-  }, [currentPage, storeFilter, isLoading]);
+  }, [currentPage, storeFilter, fetchTransactions]);
   
   // Effect for when dates change - validate but don't fetch
   useEffect(() => {
@@ -714,23 +667,13 @@ export default function SalesPage() {
   };
   
   // Handle store filter change
-  const handleStoreFilterChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleStoreFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStoreFilter = e.target.value;
-    console.log('Store filter changed to:', newStoreFilter);
-    
+    setIsLoadingStats(true); // Show loading state when switching stores
+    setIsLoading(true); // Also show loading state for the table
     setStoreFilter(newStoreFilter);
-    
-    // Reset to first page when changing store filter
-    setCurrentPage(1);
-  }, []);
-
-  // Manual refresh function
-  const handleManualRefresh = useCallback(() => {
-    debugLocalStorage();
-    console.log('Manual refresh triggered');
-    setCurrentPage(1);
-    fetchTransactions();
-  }, [debugLocalStorage, fetchTransactions]);
+    setCurrentPage(1); // Reset to page 1 when changing stores
+  };
 
   return (
     <div className={styles.container}>
@@ -739,12 +682,6 @@ export default function SalesPage() {
       <div className={styles.header}>
         <h1 className={styles.title}>Sales Transactions</h1>
         <div className={styles.buttonGroup}>
-          <button
-            onClick={handleManualRefresh}
-            className="mr-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-          >
-            Refresh Data
-          </button>
           <button
             onClick={handleClearFilters}
             className="mr-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300"
@@ -771,7 +708,7 @@ export default function SalesPage() {
             <div>
               <p className={styles.statTitle}>Total Sales</p>
                 <p className={styles.statValue} style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                  {formatCurrency(totalStats.totalSales)}
+                  {formatCurrency(totalStats.totalSales || 0)}
                 </p>
                 {storeFilter !== 'all' && (
                   <p className="text-xs text-gray-500 mt-1">
@@ -797,7 +734,7 @@ export default function SalesPage() {
             <div>
               <p className={styles.statTitle}>Total Transactions</p>
                 <p className={styles.statValue} style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                  {totalStats.totalTransactions.toLocaleString()}
+                  {totalStats.totalTransactions?.toLocaleString() || '0'}
                 </p>
                 {storeFilter !== 'all' && (
                   <p className="text-xs text-gray-500 mt-1">
@@ -823,7 +760,7 @@ export default function SalesPage() {
             <div>
               <p className={styles.statTitle}>Average Transaction</p>
                 <p className={styles.statValue} style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                  {formatCurrency(totalStats.averageTransaction)}
+                  {formatCurrency(totalStats.averageTransaction || 0)}
                 </p>
                 {storeFilter !== 'all' && (
                   <p className="text-xs text-gray-500 mt-1">
@@ -916,14 +853,61 @@ export default function SalesPage() {
             }
           </h2>
           <p className={styles.sectionSubtitle}>
-            Showing {filteredTransactions.length} of {totalItems} transactions
-            {storeFilter !== 'all' && <span className="ml-2 font-semibold">(Filtered by store)</span>}
+            {isLoading ? 'Loading transactions...' : `Showing ${filteredTransactions.length} of ${totalItems} transactions
+            ${storeFilter !== 'all' ? '(Filtered by store)' : ''}`}
           </p>
         </div>
         
         {isLoading ? (
-          <div className="flex justify-center items-center p-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div>
+            <div className="overflow-x-auto">
+              <table className={styles.table}>
+                <thead>
+                  <tr className={styles.tableHeaderRow}>
+                    <th className={styles.tableHeaderCell}>ID</th>
+                    <th className={styles.tableHeaderCell}>Reference</th>
+                    <th className={styles.tableHeaderCell}>Date</th>
+                    <th className={styles.tableHeaderCell}>Amount</th>
+                    <th className={styles.tableHeaderCell}>Status</th>
+                    <th className={styles.tableHeaderCell}>Store</th>
+                    <th className={styles.tableHeaderCell}>Branch</th>
+                    <th className={styles.tableHeaderCell}>Cashier</th>
+                    <th className={styles.tableHeaderCell}>Items</th>
+                    <th className={styles.tableHeaderCell}>Payment Method</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...Array(5)].map((_, index) => (
+                    <tr key={index} className={styles.tableRow}>
+                      {[...Array(10)].map((_, cellIndex) => (
+                        <td key={cellIndex} className={styles.tableCell}>
+                          <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className={styles.pagination}>
+              <button
+                disabled={true}
+                className={`${styles.paginationButton} opacity-50 cursor-not-allowed`}
+              >
+                Previous
+              </button>
+              
+              <span className="mx-2 text-sm text-gray-400 animate-pulse">
+                Loading...
+              </span>
+              
+              <button
+                disabled={true}
+                className={`${styles.paginationButton} opacity-50 cursor-not-allowed`}
+              >
+                Next
+              </button>
+            </div>
           </div>
         ) : (
           <>

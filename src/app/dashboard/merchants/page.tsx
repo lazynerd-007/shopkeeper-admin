@@ -29,6 +29,17 @@ const formatNumber = (num: number) => {
 // Use environment variable instead of hardcoded base URL
 const BASE_URL = env.API_BASE_URL;
 
+// Function to check if a merchant is active based on last activity date
+const isActiveBasedOnActivity = (lastTransactionDate: string): boolean => {
+  if (!lastTransactionDate) return false;
+  
+  const lastActivity = new Date(lastTransactionDate);
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  return lastActivity >= thirtyDaysAgo;
+};
+
 // Define proper interface for merchants
 interface Merchant {
   id: string;
@@ -82,6 +93,7 @@ export default function MerchantsPage() {
         });
         const data = await res.json();
         if (!res.ok || !data.status) throw new Error(data.message || 'Failed to fetch merchants');
+        
         setMerchants(data.data.docs);
         setTotal(data.data.total);
         setTotalPages(data.data.pages);
@@ -175,6 +187,9 @@ export default function MerchantsPage() {
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Status shows recent activity within the last 30 days.
+            </p>
           </div>
         </div>
       </div>
@@ -207,7 +222,7 @@ export default function MerchantsPage() {
                 <th className="px-4 py-3 text-xs font-medium text-gray-800 uppercase tracking-wider">Merchant</th>
                 <th className="px-4 py-3 text-xs font-medium text-gray-800 uppercase tracking-wider">Branch</th>
                 <th className="px-4 py-3 text-xs font-medium text-gray-800 uppercase tracking-wider">Contact</th>
-                <th className="px-4 py-3 text-xs font-medium text-gray-800 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-xs font-medium text-gray-800 uppercase tracking-wider">Activity Status</th>
                 <th className="px-4 py-3 text-xs font-medium text-gray-800 uppercase tracking-wider">Total Sales</th>
                 <th className="px-4 py-3 text-xs font-medium text-gray-800 uppercase tracking-wider">Transactions</th>
                 <th className="px-4 py-3 text-xs font-medium text-gray-800 uppercase tracking-wider">Last Activity</th>
@@ -221,8 +236,8 @@ export default function MerchantsPage() {
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{merchant.branch}</td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{merchant.contactEmail}</td>
                   <td className="px-4 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${merchant.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                      {merchant.status}
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${isActiveBasedOnActivity(merchant.lastTransactionDate) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      {isActiveBasedOnActivity(merchant.lastTransactionDate) ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatCurrency(merchant.transactionAmount)}</td>
