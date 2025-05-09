@@ -8,7 +8,7 @@ interface EnvConfig {
 
 // Load environment variables with fallbacks
 const env: EnvConfig = {
-  API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.myshopkeeper.net',
+  API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.myshopkeeper.net/api/v1',
   // Add more environment variables as needed
 };
 

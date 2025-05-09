@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import styles from './sales-page.module.css';
+import env from '../../../utils/env';
 
 // Transaction type based on the API response
 interface SaleItem {
@@ -260,10 +261,10 @@ export default function SalesPage() {
       
       if (storeId === 'all') {
         // For all stores, first fetch just the total count
-        url = 'https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1/sales/shops-transactions?limit=1&page=1&getAllStores=true';
+        url = `${env.API_BASE_URL}/sales/shops-transactions?limit=1&page=1&getAllStores=true`;
       } else {
         // For a specific store, use storeId in the header
-        url = 'https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1/sales/shops-transactions?limit=1&page=1';
+        url = `${env.API_BASE_URL}/sales/shops-transactions?limit=1&page=1`;
       }
       
       console.log('Fetching count data via transactions endpoint:', url);
@@ -303,7 +304,7 @@ export default function SalesPage() {
           const sampleSize = storeId === 'all' ? 200 : Math.min(totalTransactions, 100);
           
           // Build the sample URL based on the store filter
-          const sampleUrl = 'https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1/sales/shops-transactions';
+          const sampleUrl = `${env.API_BASE_URL}/sales/shops-transactions`;
           const params = new URLSearchParams();
           params.append('limit', sampleSize.toString());
           params.append('page', '1');
@@ -430,7 +431,7 @@ export default function SalesPage() {
       
       // Build base URL - avoid using /stores/ path that causes CORS issues
       // Use the main endpoint with appropriate headers for all requests
-      let url = `https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1/sales/shops-transactions`;
+      let url = `${env.API_BASE_URL}/sales/shops-transactions`;
       
       // Create URLSearchParams object for proper parameter handling
       const params = new URLSearchParams();
@@ -583,7 +584,7 @@ export default function SalesPage() {
         throw new Error('You must be logged in to view store data');
       }
       
-      const response = await fetch('https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1/stores/merchants', {
+      const response = await fetch(`${env.API_BASE_URL}/stores/merchants`, {
         method: 'GET',
         headers: {
           'D-UUID': '645545453533',
