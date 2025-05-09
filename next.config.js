@@ -23,6 +23,11 @@ const nextConfig = {
     concurrentFeatures: true,
   },
   
+  // Environment variables
+  env: {
+    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.default-domain.com',
+  },
+  
   // Configure webpack for better performance
   webpack: (config, { dev, isServer }) => {
     // Add optimization for CSS modules

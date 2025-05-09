@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import styles from './sales-page.module.css';
 
@@ -160,6 +160,12 @@ export default function SalesPage() {
     totalTransactions: 0,
     averageTransaction: 0
   });
+  
+  // Add a ref to track if this is the initial render
+  const isInitialMount = useRef(true);
+  
+  // Add a ref to track the last API URL fetched
+  const lastFetchedUrl = useRef<string>('');
   
   // Validate and format dates
   const validateAndFormatDates = useCallback(() => {
@@ -398,7 +404,7 @@ export default function SalesPage() {
     } finally {
       setIsLoadingStats(false);
     }
-  }, []);
+  }, [setTotalStats, setIsLoadingStats]);
   
   // Fetch transactions data
   const fetchTransactions = useCallback(async () => {
@@ -454,6 +460,18 @@ export default function SalesPage() {
       
       // Complete URL with params
       url = `${url}?${params.toString()}`;
+      
+      // Skip fetching if the URL is the same as the last one
+      // This prevents unnecessary refreshes
+      if (url === lastFetchedUrl.current) {
+        console.log('Skipping fetch - URL unchanged:', url);
+        setIsLoading(false);
+        setIsLoadingStats(false);
+        return;
+      }
+      
+      // Store the current URL for future comparison
+      lastFetchedUrl.current = url;
       
       // Log the URL for debugging
       console.log('API URL:', url);
@@ -542,22 +560,9 @@ export default function SalesPage() {
         setItemsPerPage(data.data.limit);
       }
       
-      // Update summary stats based on the current filter
-      // Don't include fetchTotalSummary in the dependencies, call it directly
-      (async () => {
-        try {
-          // Copy just the function call - don't include the function definition here
-          setIsLoadingStats(true);
-          // Add the rest of fetchTotalSummary implementation...
-          // This would be the entire body of fetchTotalSummary
-          // ...
-          
-          // Just for this fix, we'll call the original function instead
-          await fetchTotalSummary(storeFilter);
-        } catch (err) {
-          console.error('Error in inline fetchTotalSummary:', err);
-        }
-      })();
+      // Update summary stats with current store filter
+      // Use a simple function call rather than an IIFE to avoid creating a new function on each render
+      fetchTotalSummary(storeFilter);
       
     } catch (err: Error | unknown) {
       console.error('Error fetching transactions:', err);
@@ -568,7 +573,7 @@ export default function SalesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [storeFilter, currentPage, itemsPerPage, searchTerm, validateAndFormatDates, debugLocalStorage]);
+  }, [storeFilter, currentPage, itemsPerPage, searchTerm, validateAndFormatDates, debugLocalStorage, fetchTotalSummary]);
   
   // Fetch stores from the API
   const fetchStores = useCallback(async () => {
@@ -645,15 +650,22 @@ export default function SalesPage() {
     };
     
     loadData();
-  }, [fetchStores, fetchTransactions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array to ensure this only runs once on mount
   
   // Fetch transactions when page or store filter changes
   useEffect(() => {
-    // Only fetch if component has been mounted
+    // Skip the first render, as loadData already calls fetchTransactions
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    
+    // Only fetch if component has been mounted and it's not the first render
     if (!isLoading) {
       fetchTransactions();
     }
-  }, [currentPage, storeFilter, fetchTransactions, isLoading]);
+  }, [currentPage, storeFilter, isLoading]);
   
   // Effect for when dates change - validate but don't fetch
   useEffect(() => {

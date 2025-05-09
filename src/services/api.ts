@@ -1,5 +1,8 @@
 // Base API service for making HTTP requests
-const API_BASE_URL = 'https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1';
+import env from '../utils/env';
+
+// Use the API_BASE_URL from our environment configuration
+const API_BASE_URL = env.API_BASE_URL;
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
