@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
 // Simple API test endpoint
 export async function GET(request: Request) {
   try {
     // Get query parameters
     const url = new URL(request.url);
-    const storeId = url.searchParams.get('storeId') || localStorage.getItem('storeId');
-    const token = url.searchParams.get('token') || localStorage.getItem('token');
+    const storeId = url.searchParams.get('storeId') || '7'; // Default store ID
+    const token = url.searchParams.get('token') || 
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE5IiwiZW1haWwiOiJhZG1pbkBibHVwZW5ndWluLmNvbSIsImZpcnN0TmFtZSI6IkJsdVBlbmd1aW4iLCJsYXN0TmFtZSI6IkFmcmljYSIsInRpbWUiOiIyMDI1LTA1LTA5VDEwOjUxOjE3LjQ3NVoiLCJleHBpcmUiOiIyMDI1LTA1LTEwVDEwOjUxOjE3LjQ3NVoiLCJpYXQiOjE3NDY3ODc4NzcsImV4cCI6MTc0Njg3NDI3N30.ZUmD3ccUzBqg-0KrNI2GZZuF3-VL8xus8SUHxhQbCSg';
     
     if (!token || !storeId) {
       return NextResponse.json(
-        { error: 'Missing token or storeId' }, 
+        { error: 'Missing token or storeId. Please provide as query parameters.' }, 
         { status: 400 }
       );
     }
@@ -38,19 +40,28 @@ export async function GET(request: Request) {
     
     const data = await res.json();
     
-    // Log response structure to help debug
-    console.log('API Response structure:', Object.keys(data));
-    console.log('API Response status:', data.status);
+    // Return detailed information about the merchant data
+    const merchantDetails = [];
     
     if (data.data && data.data.docs && data.data.docs.length > 0) {
-      const firstMerchant = data.data.docs[0];
-      console.log('First merchant fields:', Object.keys(firstMerchant));
-      console.log('First merchant status:', firstMerchant.status);
-      console.log('First merchant isActive:', firstMerchant.isActive);
-      console.log('First merchant lastTransactionDate:', firstMerchant.lastTransactionDate);
+      for (const merchant of data.data.docs) {
+        merchantDetails.push({
+          id: merchant.id,
+          name: merchant.merchant,
+          status: merchant.status,
+          isActive: merchant.isActive,
+          lastTransactionDate: merchant.lastTransactionDate,
+          hasStatus: 'status' in merchant,
+          hasIsActive: 'isActive' in merchant,
+        });
+      }
     }
     
-    return NextResponse.json(data);
+    return NextResponse.json({
+      success: true,
+      merchantDetails,
+      rawData: data
+    });
   } catch (err) {
     console.error('Test API error:', err);
     return NextResponse.json(
