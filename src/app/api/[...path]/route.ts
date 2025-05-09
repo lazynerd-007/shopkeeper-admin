@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  request: NextRequest,
-  context: { params: { path: string[] } }
-) {
+// For GET requests
+export async function GET(request: NextRequest) {
   try {
-    const path = context.params.path.join('/');
+    // Extract path from URL
+    const pathSegments = request.nextUrl.pathname.split('/').slice(2);
+    const path = pathSegments.join('/');
     const { searchParams } = new URL(request.url);
     
     // Rebuild the URL with search parameters
@@ -81,31 +81,14 @@ export async function OPTIONS() {
 }
 
 // Forward POST, PUT, and DELETE methods
-export async function POST(
-  request: NextRequest,
-  context: { params: { path: string[] } }
-) {
-  return handleRequest(request, context);
+export async function POST(request: NextRequest) {
+  return GET(request);
 }
 
-export async function PUT(
-  request: NextRequest,
-  context: { params: { path: string[] } }
-) {
-  return handleRequest(request, context);
+export async function PUT(request: NextRequest) {
+  return GET(request);
 }
 
-export async function DELETE(
-  request: NextRequest,
-  context: { params: { path: string[] } }
-) {
-  return handleRequest(request, context);
-}
-
-// Helper function to handle all methods
-async function handleRequest(
-  request: NextRequest, 
-  context: { params: { path: string[] } }
-) {
-  return GET(request, context);
+export async function DELETE(request: NextRequest) {
+  return GET(request);
 } 
