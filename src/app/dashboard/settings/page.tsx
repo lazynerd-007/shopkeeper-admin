@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import styles from './settings-page.module.css';
+import env from '../../../utils/env';
 
 function SuccessModal({ show, message, onClose }: { show: boolean; message: string; onClose: () => void }) {
   if (!show) return null;
@@ -139,18 +140,20 @@ export default function SettingsPage() {
         throw new Error('You must be logged in to update your profile.');
       }
 
-      const response = await fetch('https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1/auth/update-user', {
-        method: 'POST',
+      const userData = {
+        firstName,
+        lastName,
+        countryCode
+      };
+
+      const response = await fetch(`${env.API_BASE_URL}/auth/update-user`, {
+        method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
           'D-UUID': '645545453533',
-          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          countryCode
-        })
+        body: JSON.stringify(userData)
       });
 
       const data = await response.json();
@@ -212,18 +215,20 @@ export default function SettingsPage() {
         throw new Error('You must be logged in to change your password.');
       }
 
-      const response = await fetch('https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1/auth/change-password', {
-        method: 'POST',
+      const passwordData = {
+        oldPassword: currentPassword,
+        newPassword: newPassword,
+        passwordHint: passwordHint
+      };
+
+      const response = await fetch(`${env.API_BASE_URL}/auth/change-password`, {
+        method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
           'D-UUID': '645545453533',
-          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          oldPassword: currentPassword,
-          newPassword: newPassword,
-          passwordHint: passwordHint
-        })
+        body: JSON.stringify(passwordData)
       });
 
       const data = await response.json();

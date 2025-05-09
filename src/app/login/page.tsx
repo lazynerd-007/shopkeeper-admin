@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import styles from './login.module.css';
+import env from '../../utils/env';
 
 function SuccessModal({ show }: { show: boolean }) {
   if (!show) return null;
@@ -50,11 +51,11 @@ export default function Login() {
     setError('');
 
     try {
-      const response = await fetch('https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1/auth/login-user', {
+      const response = await fetch(`${env.API_BASE_URL}/auth/login-user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'D-UUID': '645545453533',
+          'D-UUID': '645545453533'
         },
         body: JSON.stringify({
           emailOrPhone: email,

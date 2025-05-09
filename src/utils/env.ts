@@ -8,7 +8,8 @@ interface EnvConfig {
 
 // Load environment variables with fallbacks
 const env: EnvConfig = {
-  API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.myshopkeeper.net/api/v1',
+  // Use the Next.js API proxy to avoid CORS issues
+  API_BASE_URL: '/api',
   // Add more environment variables as needed
 };
 

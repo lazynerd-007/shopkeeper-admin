@@ -17,10 +17,6 @@ const nextConfig = {
   experimental: {
     // Optimize CSS by removing unused styles
     optimizeCss: true,
-    // Enable server components for faster page loads
-    serverComponents: true,
-    // Enable concurrent features for better user experience
-    concurrentFeatures: true,
   },
   
   // Environment variables
@@ -46,6 +42,16 @@ const nextConfig = {
     }
     
     return config;
+  },
+  
+  // Add API proxy to avoid CORS issues
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'https://api.myshopkeeper.net/api/v1/:path*',
+      },
+    ];
   },
 };
 

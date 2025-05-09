@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import styles from './dashboard-page.module.css';
 import Loader from '../../Loader';
+import env from '../../utils/env';
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -64,7 +65,7 @@ export default function Dashboard() {
           'Authorization': `Bearer ${token}`
         };
         // Fetch overview
-        const overviewRes = await fetch('https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1/stores/overview/merchant', {
+        const overviewRes = await fetch(`${env.API_BASE_URL}/stores/overview/merchant`, {
           method: 'GET',
           headers
         });
@@ -72,7 +73,7 @@ export default function Dashboard() {
         if (!overviewRes.ok || !overviewData.status) throw new Error(overviewData.message || 'Failed to fetch overview');
         setOverview(overviewData.data);
         // Fetch merchants
-        const merchantsRes = await fetch('https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1/stores/merchants', {
+        const merchantsRes = await fetch(`${env.API_BASE_URL}/stores/merchants`, {
           method: 'GET',
           headers
         });

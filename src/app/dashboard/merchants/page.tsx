@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Loader from '../../../Loader';
+import env from '../../../utils/env';
 
 const formatDate = (dateString: string) => {
   if (!dateString) return '-';
@@ -25,7 +26,8 @@ const formatNumber = (num: number) => {
   return num?.toLocaleString('en-US') || '-';
 };
 
-const BASE_URL = 'https://shopkeeper-v2-5ejc8.ondigitalocean.app/api/v1';
+// Use environment variable instead of hardcoded base URL
+const BASE_URL = env.API_BASE_URL;
 
 // Define proper interface for merchants
 interface Merchant {
