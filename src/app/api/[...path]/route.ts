@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-type RouteContext = {
-  params: {
-    path: string[];
-  };
-};
-
 export async function GET(
   request: NextRequest,
-  context: RouteContext
+  { params }: { params: { path: string[] } }
 ) {
   try {
-    const path = context.params.path.join('/');
+    const path = params.path.join('/');
     const { searchParams } = new URL(request.url);
     
     // Rebuild the URL with search parameters
@@ -89,26 +83,29 @@ export async function OPTIONS() {
 // Forward POST, PUT, and DELETE methods
 export async function POST(
   request: NextRequest,
-  context: RouteContext
+  { params }: { params: { path: string[] } }
 ) {
-  return handleRequest(request, context);
+  return handleRequest(request, { params });
 }
 
 export async function PUT(
   request: NextRequest,
-  context: RouteContext
+  { params }: { params: { path: string[] } }
 ) {
-  return handleRequest(request, context);
+  return handleRequest(request, { params });
 }
 
 export async function DELETE(
   request: NextRequest,
-  context: RouteContext
+  { params }: { params: { path: string[] } }
 ) {
-  return handleRequest(request, context);
+  return handleRequest(request, { params });
 }
 
 // Helper function to handle all methods
-async function handleRequest(request: NextRequest, context: RouteContext) {
-  return GET(request, context);
+async function handleRequest(
+  request: NextRequest, 
+  { params }: { params: { path: string[] } }
+) {
+  return GET(request, { params });
 } 
