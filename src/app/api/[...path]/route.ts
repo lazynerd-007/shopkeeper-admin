@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { path: string[] } }
 ) {
   try {
@@ -68,7 +68,10 @@ export async function GET(
 }
 
 // Handle OPTIONS requests for CORS preflight
-export async function OPTIONS() {
+export async function OPTIONS(
+  request: NextRequest,
+  { params }: { params: { path: string[] } }
+) {
   return new NextResponse(null, {
     status: 200,
     headers: {
@@ -82,27 +85,27 @@ export async function OPTIONS() {
 
 // Forward POST, PUT, and DELETE methods
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { path: string[] } }
 ) {
-  return handleRequest(request, params.path);
+  return handleRequest(request, params);
 }
 
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { path: string[] } }
 ) {
-  return handleRequest(request, params.path);
+  return handleRequest(request, params);
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { path: string[] } }
 ) {
-  return handleRequest(request, params.path);
+  return handleRequest(request, params);
 }
 
 // Helper function to handle all methods
-async function handleRequest(request: Request, pathSegments: string[]) {
-  return GET(request, { params: { path: pathSegments } });
+async function handleRequest(request: NextRequest, params: { path: string[] }) {
+  return GET(request, { params });
 } 
