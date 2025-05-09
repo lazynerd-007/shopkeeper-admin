@@ -50,6 +50,8 @@ const nextConfig = {
       {
         source: '/api/:path*',
         destination: 'https://api.myshopkeeper.net/api/v1/:path*',
+        // This will ensure the API proxy works correctly
+        basePath: false,
       },
     ];
   },
