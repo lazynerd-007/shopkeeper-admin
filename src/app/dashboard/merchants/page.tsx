@@ -35,8 +35,7 @@ interface Merchant {
   merchant: string;
   branch: string;
   contactEmail: string;
-  status: string;
-  isActive?: boolean; // Make isActive optional as it might be derived from status
+  status: string; // Status comes directly from API as "Active" or "Inactive"
   transactionAmount: number;
   transactionCount: number;
   lastTransactionDate: string;
@@ -95,15 +94,8 @@ export default function MerchantsPage() {
           console.log('First merchant isActive property exists:', 'isActive' in firstMerchant);
         }
         
-        // Ensure each merchant has an isActive value derived from its status
-        const merchantData = data.data.docs.map((merchant: Merchant) => {
-          // If merchant doesn't have isActive, derive it from status
-          return {
-            ...merchant,
-            isActive: merchant.status?.toLowerCase() === 'active'
-          };
-        });
-        
+        // Map docs to merchants and ensure proper types
+        const merchantData = data.data.docs;
         setMerchants(merchantData);
         setTotal(data.data.total);
         setTotalPages(data.data.pages);
@@ -246,7 +238,11 @@ export default function MerchantsPage() {
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{merchant.branch}</td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{merchant.contactEmail}</td>
                   <td className="px-4 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${merchant.status?.toLowerCase() === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      merchant.status?.toLowerCase() === 'active' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
                       {merchant.status || 'Unknown'}
                     </span>
                   </td>
