@@ -256,25 +256,22 @@ export default function SalesPage() {
         headers['S-UUID'] = defaultStoreId;
       }
       
-      // Build params for the merchant summary endpoint
-      const params = new URLSearchParams({
-        page: '1',
-        limit: '100',  // Get a reasonably large result set
-        search: '',
-        status: '',
-        startDate: '',
-        endDate: ''
-      });
+      // Build params for the shop transactions endpoint
+      const params = new URLSearchParams();
       
-      // If specific store, add that as a parameter
-      if (storeId !== 'all') {
-        params.append('storeId', storeId);
+      // Set a high limit to get enough data for statistics
+      params.append('limit', '500');
+      params.append('page', '1');
+      
+      // For all stores, explicitly request all stores data
+      if (storeId === 'all') {
+        params.append('getAllStores', 'true');
       }
       
-      // Use the merchant summary endpoint for all cases
-      const summaryUrl = `${env.API_BASE_URL}/stores/summary/merchant?${params.toString()}`;
+      // Use the shop transactions endpoint for summary data
+      const summaryUrl = `${env.API_BASE_URL}/sales/shops-transactions?${params.toString()}`;
       
-      console.log('Fetching merchant summary from:', summaryUrl);
+      console.log('Fetching transaction summary from:', summaryUrl);
       
       const summaryResponse = await fetch(summaryUrl, {
         method: 'GET',
@@ -288,65 +285,72 @@ export default function SalesPage() {
       const summaryData = await summaryResponse.json();
       
       if (!summaryData.status) {
-        throw new Error(summaryData.message || 'Failed to fetch merchant summary data');
+        throw new Error(summaryData.message || 'Failed to fetch transaction summary data');
+      }
+      
+      // Make sure we have transaction data
+      if (!summaryData.data || !Array.isArray(summaryData.data.docs)) {
+        throw new Error('No transaction data found in summary response');
+      }
+      
+      // Get the transactions from the response
+      const transactions = summaryData.data.docs;
+      
+      if (transactions.length === 0) {
+        // No transactions found
+        setTotalStats({
+          totalSales: 0,
+          totalTransactions: 0,
+          averageTransaction: 0
+        });
+        return;
       }
       
       if (storeId !== 'all') {
-        // For specific store, find matching store in response
-        let storeData = null;
+        // For specific store, filter transactions for this store
+        const storeTransactions = transactions.filter(
+          (transaction: Transaction) => transaction.store.id === storeId
+        );
         
-        if (summaryData.data && Array.isArray(summaryData.data.docs)) {
-          // Look for the specific store in the merchant summary data
-          storeData = summaryData.data.docs.find((m: { id: string }) => m.id === storeId);
-        }
-        
-        if (storeData) {
-          // Update stats with accurate data from merchant summary
-          setTotalStats({
-            totalSales: storeData.transactionAmount || 0,
-            totalTransactions: storeData.transactionCount || 0,
-            averageTransaction: storeData.transactionCount > 0 
-              ? storeData.transactionAmount / storeData.transactionCount 
-              : 0
-          });
-        } else {
-          // No store data found
-          setTotalStats({
-            totalSales: null,
-            totalTransactions: null,
-            averageTransaction: null
-          });
-        }
-      } else {
-        // For all stores, aggregate the data from all merchants
-        if (summaryData.data && Array.isArray(summaryData.data.docs)) {
-          const merchants = summaryData.data.docs;
-          
-          // Calculate totals across all merchants
-          let totalAmount = 0;
-          let totalCount = 0;
-          
-          merchants.forEach((merchant: { transactionAmount?: number; transactionCount?: number }) => {
-            totalAmount += merchant.transactionAmount || 0;
-            totalCount += merchant.transactionCount || 0;
-          });
+        if (storeTransactions.length > 0) {
+          // Calculate total sales amount
+          const totalAmount = storeTransactions.reduce(
+            (sum: number, transaction: Transaction) => sum + transaction.amountPaid, 
+            0
+          );
           
           // Calculate average transaction
-          const averageTransaction = totalCount > 0 ? totalAmount / totalCount : 0;
+          const averageTransaction = totalAmount / storeTransactions.length;
           
           setTotalStats({
             totalSales: totalAmount,
-            totalTransactions: totalCount,
+            totalTransactions: storeTransactions.length,
             averageTransaction: averageTransaction
           });
         } else {
-          // No data available
+          // No transactions for this store
           setTotalStats({
-            totalSales: null,
-            totalTransactions: null,
-            averageTransaction: null
+            totalSales: 0,
+            totalTransactions: 0,
+            averageTransaction: 0
           });
         }
+      } else {
+        // For all stores, use all transactions
+        // Calculate total sales amount
+        const totalAmount = transactions.reduce(
+          (sum: number, transaction: Transaction) => sum + transaction.amountPaid, 
+          0
+        );
+        
+        // Calculate average transaction
+        const averageTransaction = totalAmount / transactions.length;
+        
+        setTotalStats({
+          totalSales: totalAmount,
+          totalTransactions: transactions.length,
+          averageTransaction: averageTransaction
+        });
       }
     } catch (err) {
       console.error('Error fetching transaction summary:', err);
