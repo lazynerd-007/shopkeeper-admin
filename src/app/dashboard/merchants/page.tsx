@@ -36,7 +36,7 @@ interface Merchant {
   branch: string;
   contactEmail: string;
   status: string;
-  isActive: boolean;
+  isActive?: boolean; // Make isActive optional as it might be derived from status
   transactionAmount: number;
   transactionCount: number;
   lastTransactionDate: string;
@@ -72,12 +72,13 @@ export default function MerchantsPage() {
           page: String(currentPage),
           limit: String(rowsPerPage),
           search: searchTerm || '',
-          // Use status parameter instead of isActive
+          // Use status parameter 
           ...(statusFilter && { status: statusFilter }),
           startDate: '',
           endDate: '',
         });
         const url = `${BASE_URL}/stores/summary/merchant?${params.toString()}`;
+        console.log('Fetching merchants with URL:', url);
         const res = await fetch(url, {
           method: 'GET',
           headers,
@@ -85,34 +86,21 @@ export default function MerchantsPage() {
         const data = await res.json();
         if (!res.ok || !data.status) throw new Error(data.message || 'Failed to fetch merchants');
         
-        // Log the first merchant to check the actual structure
-        if (data.data.docs.length > 0) {
-          console.log('First merchant data:', data.data.docs[0]);
+        // Log the API response structure
+        console.log('API response status:', data.status);
+        if (data.data && data.data.docs && data.data.docs.length > 0) {
+          const firstMerchant = data.data.docs[0];
+          console.log('First merchant object keys:', Object.keys(firstMerchant));
+          console.log('First merchant status:', firstMerchant.status);
+          console.log('First merchant isActive property exists:', 'isActive' in firstMerchant);
         }
         
-        // Ensure each merchant has an isActive property calculated based on status or last activity
-        const merchantData = data.data.docs.map((merchant: Merchant | any) => {
-          // If merchant has a status property, use it to set isActive
-          if (merchant.status) {
-            return {
-              ...merchant,
-              isActive: merchant.status.toLowerCase() === 'active'
-            };
-          }
-          // If no status but has lastTransactionDate, calculate based on activity
-          else if (merchant.lastTransactionDate) {
-            const lastActivity = new Date(merchant.lastTransactionDate);
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            return {
-              ...merchant,
-              isActive: lastActivity >= thirtyDaysAgo
-            };
-          }
-          // Default to false if no data available
+        // Ensure each merchant has an isActive value derived from its status
+        const merchantData = data.data.docs.map((merchant: Merchant) => {
+          // If merchant doesn't have isActive, derive it from status
           return {
             ...merchant,
-            isActive: false
+            isActive: merchant.status?.toLowerCase() === 'active'
           };
         });
         
@@ -258,8 +246,8 @@ export default function MerchantsPage() {
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{merchant.branch}</td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{merchant.contactEmail}</td>
                   <td className="px-4 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${merchant.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                      {merchant.isActive ? 'Active' : 'Inactive'}
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${merchant.status?.toLowerCase() === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      {merchant.status || 'Unknown'}
                     </span>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatCurrency(merchant.transactionAmount)}</td>
