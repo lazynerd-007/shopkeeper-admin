@@ -83,7 +83,7 @@ export function useCache<T>(
       fetchingRef.current.delete(cacheKey);
       setIsLoading(false);
     }
-  }, [isCacheValid, ttl, backgroundRefresh]);
+  }, [isCacheValid, ttl, backgroundRefresh, fetchDataAndCache]);
   
   // Fetch and cache data
   const fetchDataAndCache = useCallback(async (cacheKey: string, isBackground: boolean = false): Promise<void> => {
@@ -116,7 +116,7 @@ export function useCache<T>(
   // Expose a refetch method to manually refresh data
   const refetch = useCallback(async (): Promise<void> => {
     await fetchData(key, true);
-  }, [fetchData, key, fetchDataAndCache]);
+  }, [fetchData, key]);
   
   // Initial fetch on mount
   useEffect(() => {
